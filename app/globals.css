@@ -60,9 +60,9 @@ h1 { font-size: clamp(3rem, 7vw, 6.3rem); line-height: 0.96; letter-spacing: -0.
 h1 span { color: var(--brand); }
 .hero-text { max-width: 720px; font-size: 1.18rem; color: var(--muted); }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin: 30px 0 34px; }
-.button { display: inline-flex; align-items: center; justify-content: center; padding: 14px 20px; border-radius: 999px; font-weight: 700; }
+.button { display: inline-flex; align-items: center; justify-content: center; padding: 14px 20px; border-radius: 999px; font-weight: 700; border: 0; cursor: pointer; font: inherit; }
 .button-primary { background: var(--brand); color: white; }
-.button-secondary { border: 1px solid var(--line); background: white; }
+.button-secondary { border: 1px solid var(--line); background: white; color: var(--ink); }
 .button-light { background: white; color: var(--brand-dark); }
 .hero-proof { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .hero-proof div { border-top: 1px solid var(--line); padding-top: 14px; }
@@ -76,7 +76,7 @@ h1 span { color: var(--brand); }
 .flow-step p { margin: 0; color: #c1cad7; font-size: 0.92rem; }
 .section { max-width: 1180px; margin: 0 auto; padding: 88px 28px; }
 .section-heading { max-width: 760px; margin-bottom: 38px; }
-.section-heading h2, .approach h2, .cta-section h2 { font-size: clamp(2.3rem, 4vw, 4.3rem); line-height: 1.02; letter-spacing: -0.045em; margin-bottom: 18px; }
+.section-heading h2, .approach h2, .cta-section h2, .factory-copy h2, .builder-intro h2 { font-size: clamp(2.3rem, 4vw, 4.3rem); line-height: 1.02; letter-spacing: -0.045em; margin-bottom: 18px; }
 .section-heading > p:last-child, .split-heading > p { color: var(--muted); font-size: 1.05rem; }
 .card-grid, .product-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
 .service-card, .product-card { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 26px; }
@@ -119,23 +119,60 @@ footer p { margin: 0; }
 .contact-action-card { background: #eef3f9; }
 .contact-email { margin: 20px 0 0; color: var(--muted); font-size: 0.92rem; }
 
+.factory-band { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 48px; align-items: center; }
+.factory-copy > p:not(.eyebrow) { color: var(--muted); font-size: 1.08rem; max-width: 620px; }
+.factory-map { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.factory-map div { background: white; border: 1px solid var(--line); border-radius: 20px; padding: 24px; min-height: 150px; }
+.factory-map span, .factory-map strong, .factory-map small { display: block; }
+.factory-map span { color: var(--brand); font-weight: 800; margin-bottom: 18px; }
+.factory-map strong { font-size: 1.12rem; margin-bottom: 7px; }
+.factory-map small { color: var(--muted); line-height: 1.45; }
+
+.factory-hero { padding-bottom: 24px; }
+.builder-section { padding-top: 30px; }
+.builder-shell { display: grid; gap: 34px; }
+.builder-intro { max-width: 820px; }
+.builder-intro > p { color: var(--muted); font-size: 1.08rem; }
+.builder-grid { display: grid; grid-template-columns: 1.45fr 0.55fr; gap: 24px; align-items: start; }
+.builder-form { background: var(--surface); border: 1px solid var(--line); border-radius: 28px; padding: 34px; box-shadow: var(--shadow); display: grid; gap: 22px; }
+.builder-form label { display: grid; gap: 8px; font-weight: 800; font-size: 0.94rem; }
+.builder-form input, .builder-form textarea, .builder-form select {
+  width: 100%; border: 1px solid #cfd7e3; border-radius: 14px; background: #fbfcfe; color: var(--ink); padding: 13px 14px; font: inherit; font-weight: 400;
+}
+.builder-form input:focus, .builder-form textarea:focus, .builder-form select:focus { outline: 3px solid rgba(29,78,216,0.12); border-color: var(--brand); }
+.builder-form textarea { min-height: 112px; resize: vertical; }
+.builder-two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.builder-submit { justify-self: start; margin-top: 4px; }
+.builder-side { position: sticky; top: 22px; background: var(--ink); color: white; border-radius: 26px; padding: 30px; }
+.builder-side h3 { font-size: 1.7rem; line-height: 1.1; }
+.builder-side p { color: #c1cad7; }
+.factory-flow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; font-size: 0.78rem; font-weight: 800; color: #9fb6d9; }
+.factory-flow span:nth-child(odd) { background: rgba(255,255,255,0.08); padding: 7px 9px; border-radius: 999px; }
+.brief-output { border: 1px solid var(--line); border-radius: 28px; padding: 30px; background: #eef3f9; }
+.brief-heading { display: flex; justify-content: space-between; gap: 24px; align-items: start; margin-bottom: 20px; }
+.brief-heading h3 { font-size: 1.6rem; max-width: 720px; }
+.brief-output pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; padding: 24px; background: var(--ink); color: #e9eef6; border-radius: 18px; font: 0.88rem/1.6 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
 @media (max-width: 900px) {
   nav a:not(.nav-cta) { display: none; }
-  .hero, .approach, .split-heading { grid-template-columns: 1fr; }
+  .hero, .approach, .split-heading, .factory-band, .builder-grid { grid-template-columns: 1fr; }
   .hero { padding-top: 32px; gap: 34px; }
   .card-grid, .product-grid, .detail-grid, .contact-grid { grid-template-columns: repeat(2, 1fr); }
   .principle-grid { grid-template-columns: repeat(2, 1fr); }
   .cta-section { margin-left: 20px; margin-right: 20px; align-items: flex-start; flex-direction: column; }
+  .builder-side { position: static; }
   footer { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 620px) {
   .site-header { padding: 18px 20px; }
   .hero, .section, .page-hero { padding-left: 20px; padding-right: 20px; }
-  .hero-proof, .card-grid, .product-grid, .detail-grid, .principle-grid, .contact-grid { grid-template-columns: 1fr; }
+  .hero-proof, .card-grid, .product-grid, .detail-grid, .principle-grid, .contact-grid, .factory-map, .builder-two { grid-template-columns: 1fr; }
   .hero { margin-bottom: 30px; }
   .section { padding-top: 64px; padding-bottom: 64px; }
   .page-hero { padding-top: 42px; }
   .cta-section { padding: 34px 24px; }
   .nav-cta { padding: 9px 13px; }
+  .builder-form, .brief-output { padding: 22px; }
+  .brief-heading { flex-direction: column; }
 }
