@@ -1,159 +1,26 @@
--- AI Real Solutions Software Factory
+-- AI Real Solutions Software + Automation Factory
 -- Shared Supabase/Postgres incubator schema.
--- Purpose: safely host many low-risk prototypes in one project while keeping tenant/project data isolated.
--- Review RLS and product-specific compliance requirements before production use.
-
-create extension if not exists pgcrypto;
-create schema if not exists factory;
-
+-- Low-risk prototypes share infrastructure while tenant/project records remain isolated with RLS.
+create extension if not exists pgcrypto; create schema if not exists factory;
 create type factory.project_stage as enum ('discovery','architecture','prototype','testing','production','archived');
 create type factory.member_role as enum ('owner','admin','builder','viewer');
-
-create table factory.organizations (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  slug text unique,
-  created_by uuid references auth.users(id),
-  created_at timestamptz not null default now()
-);
-
-create table factory.memberships (
-  organization_id uuid not null references factory.organizations(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  role factory.member_role not null default 'viewer',
-  created_at timestamptz not null default now(),
-  primary key (organization_id, user_id)
-);
-
-create table factory.projects (
-  id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references factory.organizations(id) on delete cascade,
-  name text not null,
-  slug text,
-  industry text,
-  summary text,
-  stage factory.project_stage not null default 'discovery',
-  infrastructure_mode text not null default 'shared' check (infrastructure_mode in ('shared','dedicated_candidate','dedicated')),
-  data_classification text,
-  created_by uuid references auth.users(id),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (organization_id, slug)
-);
-
-create table factory.intake_answers (
-  id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references factory.projects(id) on delete cascade,
-  section text not null,
-  field_key text not null,
-  answer jsonb not null default 'null'::jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (project_id, field_key)
-);
-
-create table factory.build_briefs (
-  id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references factory.projects(id) on delete cascade,
-  version integer not null default 1,
-  content text not null,
-  structured_brief jsonb not null default '{}'::jsonb,
-  created_by uuid references auth.users(id),
-  created_at timestamptz not null default now(),
-  unique (project_id, version)
-);
-
-create table factory.features (
-  id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references factory.projects(id) on delete cascade,
-  name text not null,
-  description text,
-  priority text not null default 'later' check (priority in ('mvp','next','later')),
-  status text not null default 'planned',
-  sort_order integer not null default 0,
-  created_at timestamptz not null default now()
-);
-
-create table factory.artifacts (
-  id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references factory.projects(id) on delete cascade,
-  artifact_type text not null,
-  title text not null,
-  content jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now()
-);
-
-create table factory.project_events (
-  id bigint generated always as identity primary key,
-  project_id uuid not null references factory.projects(id) on delete cascade,
-  actor_id uuid references auth.users(id),
-  event_type text not null,
-  detail jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now()
-);
-
-create index memberships_user_idx on factory.memberships(user_id);
-create index projects_org_idx on factory.projects(organization_id);
-create index intake_project_idx on factory.intake_answers(project_id);
-create index briefs_project_idx on factory.build_briefs(project_id);
-create index features_project_idx on factory.features(project_id);
-create index artifacts_project_idx on factory.artifacts(project_id);
-create index events_project_idx on factory.project_events(project_id, created_at desc);
-
--- Helper functions keep RLS policies readable.
-create or replace function factory.is_org_member(org_id uuid)
-returns boolean language sql stable security definer set search_path = '' as $$
-  select exists (
-    select 1 from factory.memberships m
-    where m.organization_id = org_id and m.user_id = auth.uid()
-  );
-$$;
-
-create or replace function factory.can_manage_org(org_id uuid)
-returns boolean language sql stable security definer set search_path = '' as $$
-  select exists (
-    select 1 from factory.memberships m
-    where m.organization_id = org_id
-      and m.user_id = auth.uid()
-      and m.role in ('owner','admin','builder')
-  );
-$$;
-
-create or replace function factory.can_access_project(pid uuid)
-returns boolean language sql stable security definer set search_path = '' as $$
-  select exists (
-    select 1 from factory.projects p
-    join factory.memberships m on m.organization_id = p.organization_id
-    where p.id = pid and m.user_id = auth.uid()
-  );
-$$;
-
-alter table factory.organizations enable row level security;
-alter table factory.memberships enable row level security;
-alter table factory.projects enable row level security;
-alter table factory.intake_answers enable row level security;
-alter table factory.build_briefs enable row level security;
-alter table factory.features enable row level security;
-alter table factory.artifacts enable row level security;
-alter table factory.project_events enable row level security;
-
-create policy organizations_select on factory.organizations for select using (factory.is_org_member(id));
-create policy organizations_insert on factory.organizations for insert with check (created_by = auth.uid());
-create policy organizations_update on factory.organizations for update using (factory.can_manage_org(id));
-
-create policy memberships_select on factory.memberships for select using (factory.is_org_member(organization_id));
-create policy memberships_manage on factory.memberships for all using (factory.can_manage_org(organization_id)) with check (factory.can_manage_org(organization_id));
-
-create policy projects_select on factory.projects for select using (factory.is_org_member(organization_id));
-create policy projects_insert on factory.projects for insert with check (factory.can_manage_org(organization_id));
-create policy projects_update on factory.projects for update using (factory.can_manage_org(organization_id));
-create policy projects_delete on factory.projects for delete using (factory.can_manage_org(organization_id));
-
-create policy intake_access on factory.intake_answers for all using (factory.can_access_project(project_id)) with check (factory.can_access_project(project_id));
-create policy briefs_access on factory.build_briefs for all using (factory.can_access_project(project_id)) with check (factory.can_access_project(project_id));
-create policy features_access on factory.features for all using (factory.can_access_project(project_id)) with check (factory.can_access_project(project_id));
-create policy artifacts_access on factory.artifacts for all using (factory.can_access_project(project_id)) with check (factory.can_access_project(project_id));
-create policy events_access on factory.project_events for all using (factory.can_access_project(project_id)) with check (factory.can_access_project(project_id));
-
--- Graduation rule (application-level): move a project to dedicated infrastructure when
--- sensitivity/compliance, scale, backup/restore independence, customer isolation, or revenue warrants it.
+create table factory.organizations(id uuid primary key default gen_random_uuid(),name text not null,slug text unique,created_by uuid references auth.users(id),created_at timestamptz not null default now());
+create table factory.memberships(organization_id uuid not null references factory.organizations(id) on delete cascade,user_id uuid not null references auth.users(id) on delete cascade,role factory.member_role not null default 'viewer',created_at timestamptz not null default now(),primary key(organization_id,user_id));
+create table factory.projects(id uuid primary key default gen_random_uuid(),organization_id uuid not null references factory.organizations(id) on delete cascade,name text not null,slug text,industry text,summary text,stage factory.project_stage not null default 'discovery',infrastructure_mode text not null default 'shared' check(infrastructure_mode in('shared','dedicated_candidate','dedicated')),data_classification text,created_by uuid references auth.users(id),created_at timestamptz not null default now(),updated_at timestamptz not null default now(),unique(organization_id,slug));
+create table factory.intake_answers(id uuid primary key default gen_random_uuid(),project_id uuid not null references factory.projects(id) on delete cascade,section text not null,field_key text not null,answer jsonb not null default 'null'::jsonb,created_at timestamptz not null default now(),updated_at timestamptz not null default now(),unique(project_id,field_key));
+create table factory.build_briefs(id uuid primary key default gen_random_uuid(),project_id uuid not null references factory.projects(id) on delete cascade,version integer not null default 1,content text not null,structured_brief jsonb not null default '{}'::jsonb,created_by uuid references auth.users(id),created_at timestamptz not null default now(),unique(project_id,version));
+create table factory.features(id uuid primary key default gen_random_uuid(),project_id uuid not null references factory.projects(id) on delete cascade,name text not null,description text,priority text not null default 'later' check(priority in('mvp','next','later')),status text not null default 'planned',sort_order integer not null default 0,created_at timestamptz not null default now());
+-- Automations are first-class factory products, not merely feature notes.
+create table factory.automations(id uuid primary key default gen_random_uuid(),project_id uuid not null references factory.projects(id) on delete cascade,name text not null,description text,status text not null default 'draft' check(status in('draft','testing','active','paused','retired')),trigger_type text not null,trigger_config jsonb not null default '{}'::jsonb,condition_config jsonb not null default '{}'::jsonb,action_config jsonb not null default '[]'::jsonb,requires_approval boolean not null default false,approval_config jsonb not null default '{}'::jsonb,exception_config jsonb not null default '{}'::jsonb,last_run_at timestamptz,next_run_at timestamptz,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+create table factory.automation_runs(id uuid primary key default gen_random_uuid(),automation_id uuid not null references factory.automations(id) on delete cascade,project_id uuid not null references factory.projects(id) on delete cascade,status text not null check(status in('queued','running','waiting_approval','succeeded','failed','canceled')),trigger_payload jsonb not null default '{}'::jsonb,result jsonb not null default '{}'::jsonb,error_detail jsonb not null default '{}'::jsonb,started_at timestamptz not null default now(),finished_at timestamptz);
+create table factory.approval_requests(id uuid primary key default gen_random_uuid(),project_id uuid not null references factory.projects(id) on delete cascade,automation_run_id uuid references factory.automation_runs(id) on delete cascade,requested_from uuid references auth.users(id),status text not null default 'pending' check(status in('pending','approved','rejected','expired')),context jsonb not null default '{}'::jsonb,decided_at timestamptz,created_at timestamptz not null default now());
+create table factory.artifacts(id uuid primary key default gen_random_uuid(),project_id uuid not null references factory.projects(id) on delete cascade,artifact_type text not null,title text not null,content jsonb not null default '{}'::jsonb,created_at timestamptz not null default now());
+create table factory.project_events(id bigint generated always as identity primary key,project_id uuid not null references factory.projects(id) on delete cascade,actor_id uuid references auth.users(id),event_type text not null,detail jsonb not null default '{}'::jsonb,created_at timestamptz not null default now());
+create index memberships_user_idx on factory.memberships(user_id);create index projects_org_idx on factory.projects(organization_id);create index intake_project_idx on factory.intake_answers(project_id);create index briefs_project_idx on factory.build_briefs(project_id);create index features_project_idx on factory.features(project_id);create index automations_project_idx on factory.automations(project_id);create index automation_runs_project_idx on factory.automation_runs(project_id,started_at desc);create index approval_project_idx on factory.approval_requests(project_id,status);create index artifacts_project_idx on factory.artifacts(project_id);create index events_project_idx on factory.project_events(project_id,created_at desc);
+create or replace function factory.is_org_member(org_id uuid) returns boolean language sql stable security definer set search_path='' as $$select exists(select 1 from factory.memberships m where m.organization_id=org_id and m.user_id=auth.uid());$$;
+create or replace function factory.can_manage_org(org_id uuid) returns boolean language sql stable security definer set search_path='' as $$select exists(select 1 from factory.memberships m where m.organization_id=org_id and m.user_id=auth.uid() and m.role in('owner','admin','builder'));$$;
+create or replace function factory.can_access_project(pid uuid) returns boolean language sql stable security definer set search_path='' as $$select exists(select 1 from factory.projects p join factory.memberships m on m.organization_id=p.organization_id where p.id=pid and m.user_id=auth.uid());$$;
+alter table factory.organizations enable row level security;alter table factory.memberships enable row level security;alter table factory.projects enable row level security;alter table factory.intake_answers enable row level security;alter table factory.build_briefs enable row level security;alter table factory.features enable row level security;alter table factory.automations enable row level security;alter table factory.automation_runs enable row level security;alter table factory.approval_requests enable row level security;alter table factory.artifacts enable row level security;alter table factory.project_events enable row level security;
+create policy organizations_select on factory.organizations for select using(factory.is_org_member(id));create policy organizations_insert on factory.organizations for insert with check(created_by=auth.uid());create policy organizations_update on factory.organizations for update using(factory.can_manage_org(id));create policy memberships_select on factory.memberships for select using(factory.is_org_member(organization_id));create policy memberships_manage on factory.memberships for all using(factory.can_manage_org(organization_id)) with check(factory.can_manage_org(organization_id));create policy projects_select on factory.projects for select using(factory.is_org_member(organization_id));create policy projects_insert on factory.projects for insert with check(factory.can_manage_org(organization_id));create policy projects_update on factory.projects for update using(factory.can_manage_org(organization_id));create policy projects_delete on factory.projects for delete using(factory.can_manage_org(organization_id));create policy intake_access on factory.intake_answers for all using(factory.can_access_project(project_id)) with check(factory.can_access_project(project_id));create policy briefs_access on factory.build_briefs for all using(factory.can_access_project(project_id)) with check(factory.can_access_project(project_id));create policy features_access on factory.features for all using(factory.can_access_project(project_id)) with check(factory.can_access_project(project_id));create policy automations_access on factory.automations for all using(factory.can_access_project(project_id)) with check(factory.can_access_project(project_id));create policy automation_runs_access on factory.automation_runs for all using(factory.can_access_project(project_id)) with check(factory.can_access_project(project_id));create policy approvals_access on factory.approval_requests for all using(factory.can_access_project(project_id)) with check(factory.can_access_project(project_id));create policy artifacts_access on factory.artifacts for all using(factory.can_access_project(project_id)) with check(factory.can_access_project(project_id));create policy events_access on factory.project_events for all using(factory.can_access_project(project_id)) with check(factory.can_access_project(project_id));
+-- Automation execution should use trusted server-side workers/service roles. Never expose service-role credentials to the browser.
+-- Graduate projects when sensitivity/compliance, scale, backup independence, customer isolation, or revenue warrants dedicated infrastructure.
