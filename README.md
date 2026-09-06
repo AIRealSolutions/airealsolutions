@@ -1,16 +1,40 @@
-## Hi there 👋
+# AI Real Solutions
 
-<!--
-**AIRealSolutions/airealsolutions** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+Official website repository for **AIRealSolutions.com**.
 
-Here are some ideas to get you started:
+AI Real Solutions builds practical AI-assisted software, business automations, government and civic technology, marketing systems, public-relations workflows, and focused digital products.
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+## Stack
+
+- Next.js App Router
+- React
+- TypeScript
+- Responsive CSS
+- Vercel-ready deployment
+
+## Current Site Sections
+
+- Business Automation
+- Application Development
+- Government & Civic Technology
+- Marketing & Public Relations
+- Government Relations & Procurement
+- AI Workflow Consulting
+- Product Studio
+
+## Product Portfolio
+
+The site currently introduces projects including VirtualClerk.ai, NCIssues.com, ElectionAgents.com, CemeteryBuilder.ai, SignForge, and USA HUD Homes.
+
+## Local Development
+
+```bash
+npm install
+npm run dev
+```
+
+Then open `http://localhost:3000`.
+
+## Production
+
+The project is structured for deployment on Vercel with `airealsolutions.com` as the intended production domain.
