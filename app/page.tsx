@@ -29,7 +29,7 @@ const products = [
   {
     name: "VirtualClerk.ai",
     tag: "Municipal Workflow",
-    text: "A concept for AI-assisted government and committee workflows, records, agendas, routine tasks, and public information.",
+    text: "AI-assisted government and committee workflows, records, agendas, routine tasks, and public information.",
   },
   {
     name: "NCIssues.com",
@@ -62,43 +62,58 @@ export default function Home() {
   return (
     <main>
       <header className="site-header">
-        <a className="brand" href="#top" aria-label="AI Real Solutions home">
+        <a className="brand" href="/" aria-label="AI Real Solutions home">
           <span className="brand-mark">AI</span>
           <span>Real Solutions</span>
         </a>
         <nav aria-label="Primary navigation">
-          <a href="#services">Services</a>
-          <a href="#products">Products</a>
-          <a href="#approach">Approach</a>
-          <a className="nav-cta" href="#contact">Start a Project</a>
+          <a href="/services">Services</a>
+          <a href="/products">Products</a>
+          <a href="/about">About</a>
+          <a className="nav-cta" href="/build">Build Something</a>
         </nav>
       </header>
 
       <section className="hero" id="top">
         <div className="hero-copy">
-          <p className="eyebrow">AI-assisted business & civic technology</p>
-          <h1>Real problems deserve <span>real solutions.</span></h1>
+          <p className="eyebrow">AI-assisted software factory</p>
+          <h1>From business problem to <span>working software.</span></h1>
           <p className="hero-text">
-            AI Real Solutions designs practical software, automations, digital workflows,
-            and communication systems for businesses, local governments, campaigns, and
-            community organizations.
+            AI Real Solutions combines discovery, AI-assisted development, automation, databases, and deployment into a repeatable process for building useful software faster.
           </p>
           <div className="hero-actions">
-            <a className="button button-primary" href="#contact">Discuss a Project</a>
-            <a className="button button-secondary" href="#products">See What We’re Building</a>
+            <a className="button button-primary" href="/build">Build Your Project Brief</a>
+            <a className="button button-secondary" href="/products">See What We’re Building</a>
           </div>
           <div className="hero-proof">
-            <div><strong>Practical</strong><span>Built around actual work</span></div>
-            <div><strong>Focused</strong><span>Technology with a clear purpose</span></div>
-            <div><strong>Adaptable</strong><span>Solutions that can grow</span></div>
+            <div><strong>Discover</strong><span>Define the real problem first</span></div>
+            <div><strong>Prototype</strong><span>Build the smallest useful version</span></div>
+            <div><strong>Scale</strong><span>Grow only after the workflow proves itself</span></div>
           </div>
         </div>
-        <div className="hero-panel" aria-label="AI Real Solutions capabilities">
-          <p className="panel-kicker">From idea to working system</p>
-          <div className="flow-step"><span>01</span><div><strong>Find the friction</strong><p>Identify wasted time, repeated work, and communication gaps.</p></div></div>
-          <div className="flow-step"><span>02</span><div><strong>Design the workflow</strong><p>Choose the simplest combination of people, software, data, and AI.</p></div></div>
-          <div className="flow-step"><span>03</span><div><strong>Build the solution</strong><p>Create the application, automation, website, or operating process.</p></div></div>
-          <div className="flow-step"><span>04</span><div><strong>Improve with use</strong><p>Measure what works, refine the system, and expand only where useful.</p></div></div>
+        <div className="hero-panel" aria-label="AI Real Solutions software factory process">
+          <p className="panel-kicker">The software factory</p>
+          <div className="flow-step"><span>01</span><div><strong>Guided intake</strong><p>Ask the questions needed to understand users, workflow, data, constraints, and outcomes.</p></div></div>
+          <div className="flow-step"><span>02</span><div><strong>Build brief</strong><p>Turn answers into structured requirements that people and AI coding systems can work from.</p></div></div>
+          <div className="flow-step"><span>03</span><div><strong>Prototype & test</strong><p>Build a focused version, put it in front of real users, and learn quickly.</p></div></div>
+          <div className="flow-step"><span>04</span><div><strong>Production system</strong><p>Harden the data, permissions, integrations, deployment, and ongoing operating model.</p></div></div>
+        </div>
+      </section>
+
+      <section className="section factory-band">
+        <div className="factory-copy">
+          <p className="eyebrow">Start before the sales call</p>
+          <h2>Onboarding should begin building the software.</h2>
+          <p>
+            Instead of a generic contact form, customers can work through the same discovery questions we would ask in a project meeting. Their answers become the first version of the product specification.
+          </p>
+          <a className="button button-primary" href="/build">Try the Project Builder</a>
+        </div>
+        <div className="factory-map" aria-label="Software factory workflow">
+          <div><span>1</span><strong>Problem</strong><small>What is not working?</small></div>
+          <div><span>2</span><strong>Requirements</strong><small>Who, what, data, integrations?</small></div>
+          <div><span>3</span><strong>Prototype</strong><small>What is the smallest useful product?</small></div>
+          <div><span>4</span><strong>Operate</strong><small>Secure, measure, support, improve.</small></div>
         </div>
       </section>
 
@@ -123,9 +138,9 @@ export default function Home() {
         <div className="section-heading split-heading">
           <div>
             <p className="eyebrow">Product studio</p>
-            <h2>We build our own tools, too.</h2>
+            <h2>Our own projects prove the process.</h2>
           </div>
-          <p>These projects show the kind of focused, industry-specific systems AI Real Solutions is developing across government, real estate, elections, heritage, and production businesses.</p>
+          <p>These products give AI Real Solutions a growing library of reusable patterns for government, real estate, campaigns, heritage, production businesses, and workflow automation.</p>
         </div>
         <div className="product-grid">
           {products.map((product) => (
@@ -141,14 +156,14 @@ export default function Home() {
       <section className="section approach" id="approach">
         <div>
           <p className="eyebrow">Our approach</p>
-          <h2>AI should simplify the work, not become another job to manage.</h2>
+          <h2>Build reusable capability, not one-off code.</h2>
         </div>
         <div className="approach-copy">
           <p>
-            The best AI implementation often begins with a very ordinary question: what is taking too long, being done twice, getting lost between people, or preventing someone from serving a customer or citizen well?
+            Every project should make the next project easier. Authentication, permissions, onboarding, dashboards, notifications, document handling, search, billing, AI workflows, and deployment can become reusable building blocks.
           </p>
           <p>
-            We start there. Then we build only what earns its place in the workflow. Sometimes that is an AI agent. Sometimes it is a better database, a simpler website, a dashboard, a communication system, or an automation connecting tools that already exist.
+            The result is a software factory: a disciplined way to move from an operational problem to a tested product without reinventing the entire foundation each time.
           </p>
         </div>
       </section>
@@ -156,15 +171,15 @@ export default function Home() {
       <section className="cta-section" id="contact">
         <div>
           <p className="eyebrow">Start with the problem</p>
-          <h2>Have a process that should work better?</h2>
-          <p>Tell us what is slowing you down, what you are trying to build, or what your organization needs to make easier.</p>
+          <h2>Have something that should work better?</h2>
+          <p>Use the guided intake to turn the idea into a structured brief, then we can decide whether it needs automation, a custom application, AI, or a simpler solution.</p>
         </div>
-        <a className="button button-light" href="mailto:marcspencer28461@gmail.com">Start the Conversation</a>
+        <a className="button button-light" href="/build">Start Building</a>
       </section>
 
       <footer>
         <div className="brand footer-brand"><span className="brand-mark">AI</span><span>Real Solutions</span></div>
-        <p>Practical AI, automation, software, and digital strategy for real-world work.</p>
+        <p>Making real solutions for modern business objectives using AI tools.</p>
         <span>© {new Date().getFullYear()} AI Real Solutions</span>
       </footer>
     </main>
