@@ -95,21 +95,47 @@ footer { max-width: 1180px; margin: 0 auto; padding: 48px 28px 64px; display: gr
 footer p { margin: 0; }
 .footer-brand { color: var(--ink); }
 
+.page-hero {
+  max-width: 1180px;
+  margin: 40px auto 24px;
+  padding: 64px 28px 40px;
+}
+.page-hero h1 { max-width: 980px; font-size: clamp(3rem, 6vw, 5.5rem); }
+.page-hero > p:last-child { max-width: 800px; color: var(--muted); font-size: 1.16rem; }
+.detail-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.detail-card { background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 32px; }
+.detail-card h2 { font-size: 1.7rem; line-height: 1.1; margin-bottom: 14px; }
+.detail-card p { color: var(--muted); }
+.detail-card ul, .contact-card ul { margin: 22px 0 0; padding-left: 20px; color: var(--muted); }
+.detail-card li, .contact-card li { margin: 7px 0; }
+.text-link { display: inline-flex; margin-top: 12px; font-weight: 800; color: var(--brand); }
+.principle-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.principle-card { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 26px; }
+.principle-card h3 { margin-bottom: 8px; }
+.principle-card p { color: var(--muted); margin-bottom: 0; }
+.contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.contact-card { background: var(--surface); border: 1px solid var(--line); border-radius: 26px; padding: 34px; }
+.contact-card h2 { font-size: clamp(2rem, 3.5vw, 3.4rem); line-height: 1.05; letter-spacing: -0.04em; }
+.contact-action-card { background: #eef3f9; }
+.contact-email { margin: 20px 0 0; color: var(--muted); font-size: 0.92rem; }
+
 @media (max-width: 900px) {
   nav a:not(.nav-cta) { display: none; }
   .hero, .approach, .split-heading { grid-template-columns: 1fr; }
   .hero { padding-top: 32px; gap: 34px; }
-  .card-grid, .product-grid { grid-template-columns: repeat(2, 1fr); }
+  .card-grid, .product-grid, .detail-grid, .contact-grid { grid-template-columns: repeat(2, 1fr); }
+  .principle-grid { grid-template-columns: repeat(2, 1fr); }
   .cta-section { margin-left: 20px; margin-right: 20px; align-items: flex-start; flex-direction: column; }
   footer { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 620px) {
   .site-header { padding: 18px 20px; }
-  .hero, .section { padding-left: 20px; padding-right: 20px; }
-  .hero-proof, .card-grid, .product-grid { grid-template-columns: 1fr; }
+  .hero, .section, .page-hero { padding-left: 20px; padding-right: 20px; }
+  .hero-proof, .card-grid, .product-grid, .detail-grid, .principle-grid, .contact-grid { grid-template-columns: 1fr; }
   .hero { margin-bottom: 30px; }
   .section { padding-top: 64px; padding-bottom: 64px; }
+  .page-hero { padding-top: 42px; }
   .cta-section { padding: 34px 24px; }
   .nav-cta { padding: 9px 13px; }
 }
