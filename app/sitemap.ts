@@ -1,12 +1,12 @@
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [
-    {
-      url: "https://airealsolutions.com",
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 1,
-    },
-  ];
+  const routes = ["", "/services", "/products", "/about", "/contact", "/build"];
+
+  return routes.map((route, index) => ({
+    url: `https://airealsolutions.com${route}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: index === 0 ? 1 : route === "/build" ? 0.95 : 0.8,
+  }));
 }
