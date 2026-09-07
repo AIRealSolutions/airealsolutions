@@ -183,7 +183,7 @@ export default function FactorySavePanel({ form, brief }: Props) {
       const sectionMap: Record<string, string> = {
         organization: "idea", industry: "idea", idea: "idea",
         problem: "discovery", currentProcess: "discovery", desiredOutcome: "discovery",
-        users: "users", mustHave: "workflow", integrations: "workflow", automation: "workflow",
+        users: "users", mustHave: "workflow", addons: "workflow", integrations: "workflow", automation: "workflow",
         triggers: "workflow", approvals: "workflow", dataSensitivity: "data",
         timeline: "scope", budget: "scope", success: "scope",
       };
