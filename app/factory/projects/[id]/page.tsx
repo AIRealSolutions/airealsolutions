@@ -1,4 +1,37 @@
-const tabs=["Overview","Build Brief","Features","Automations","Data","Integrations","Prototype","Activity"];
-const automations=[{name:"New lead follow-up",trigger:"New intake submitted",action:"Classify → assign → draft response → notify owner",approval:"Review before first outbound message"},{name:"Project status watch",trigger:"Stage or task changes",action:"Evaluate blockers → update activity → notify when attention is needed",approval:"Only exceptions require review"},{name:"Weekly project brief",trigger:"Every Monday",action:"Summarize progress → risks → next actions",approval:"Automatic internal delivery"}];
+import ArchitecturePanel from "./ArchitecturePanel";
+
+const SUPABASE_URL="https://xqdsmbyealtammgmpsqe.supabase.co";
+const SUPABASE_KEY="sb_publishable_78q5LVudkA7u2hqsecLmAw_br2XlkUB";
+const tabs=["Overview","Build Brief","Architecture","Features","Automations","Data","Integrations","Prototype","Activity"];
+
 export const metadata={title:"Project Workspace | AI Real Solutions"};
-export default async function ProjectWorkspace({params}:{params:Promise<{id:string}>}){const{id}=await params;return <main><header className="site-header"><a className="brand" href="/"><span className="brand-mark">AI</span><span>Real Solutions</span></a><nav><a href="/factory">Factory</a><a href="/products">Products</a><a className="nav-cta" href="/build">New Project</a></nav></header><section className="page-hero factory-hero"><p className="eyebrow">Factory Project / {id}</p><h1>Project <span>workspace.</span></h1><p>One operating record for discovery, product architecture, automations, prototype work, approvals, and production history.</p></section><section className="section factory-workspace"><div className="workspace-tabs">{tabs.map((t,i)=><button key={t} className={i===0?"active":""}>{t}</button>)}</div><div className="workspace-summary"><article><span className="product-tag">Stage</span><strong>Discovery</strong><p>Build brief captured. Architecture and automation mapping are next.</p></article><article><span className="product-tag">Infrastructure</span><strong>Shared Factory</strong><p>Project-isolated incubator architecture until graduation criteria are met.</p></article><article><span className="product-tag">Next Gate</span><strong>Architecture Review</strong><p>Approve screens, data model, integrations, automations, and MVP scope.</p></article></div><div className="workspace-columns"><section className="workspace-panel"><span className="product-tag">Product specification</span><h2>What the factory produces</h2><div className="workspace-checks"><div><b>01</b><span><strong>Build Brief</strong><small>Problem, users, outcome, requirements and constraints.</small></span></div><div><b>02</b><span><strong>Application Map</strong><small>Screens, roles, permissions, workflows and data.</small></span></div><div><b>03</b><span><strong>Automation Map</strong><small>Triggers, conditions, actions, approvals and exceptions.</small></span></div><div><b>04</b><span><strong>Prototype Plan</strong><small>Smallest useful version, test criteria and launch gate.</small></span></div></div></section><section className="workspace-panel automation-panel"><span className="product-tag">Automation candidates</span><h2>Work the system can perform</h2>{automations.map(a=><div className="automation-row" key={a.name}><strong>{a.name}</strong><small><b>Trigger:</b> {a.trigger}</small><small><b>Action:</b> {a.action}</small><small><b>Human control:</b> {a.approval}</small></div>)}</section></div></section></main>}
+
+async function getPublicProject(slug:string){
+  try{
+    const response=await fetch(`${SUPABASE_URL}/rest/v1/factory_public_projects?slug=eq.${encodeURIComponent(slug)}&select=slug,name,summary,stage,progress,infrastructure_mode,project_type,next_action,automation_summary&limit=1`,{headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`},next:{revalidate:60}});
+    if(!response.ok)return null;
+    const rows=await response.json();
+    return Array.isArray(rows)?rows[0]||null:null;
+  }catch{return null}
+}
+
+function label(value:string|undefined){return (value||"").replaceAll("_"," ").replace(/\b\w/g,c=>c.toUpperCase())}
+
+export default async function ProjectWorkspace({params}:{params:Promise<{id:string}>}){
+  const{id}=await params;
+  const project=await getPublicProject(id);
+  const name=project?.name||id;
+  const stage=label(project?.stage)||"Discovery";
+  const infrastructure=label(project?.infrastructure_mode)||"Shared Factory";
+  const next=project?.next_action||"Capture discovery and generate architecture";
+  return <main>
+    <header className="site-header"><a className="brand" href="/"><span className="brand-mark">AI</span><span>Real Solutions</span></a><nav><a href="/factory">Factory</a><a href="/products">Products</a><a className="nav-cta" href="/build">New Project</a></nav></header>
+    <section className="page-hero factory-hero"><p className="eyebrow">Factory Project / {label(project?.project_type)||"Project"}</p><h1>{name} <span>workspace.</span></h1><p>{project?.summary||"One operating record for discovery, product architecture, automations, prototype work, approvals, and production history."}</p></section>
+    <section className="section factory-workspace">
+      <div className="workspace-tabs">{tabs.map((t,i)=><a href={t==="Architecture"?"#architecture":"#overview"} key={t} className={i===0?"active":""}>{t}</a>)}</div>
+      <div className="workspace-summary" id="overview"><article><span className="product-tag">Stage</span><strong>{stage}</strong><p>{project?.progress??0}% through the current Factory lifecycle.</p></article><article><span className="product-tag">Infrastructure</span><strong>{infrastructure}</strong><p>Products can remain in the shared incubator until security, scale or maturity justify graduation.</p></article><article><span className="product-tag">Next Gate</span><strong>Architecture Review</strong><p>{next}</p></article></div>
+      <div className="workspace-columns"><section className="workspace-panel"><span className="product-tag">Product specification</span><h2>What the Factory produces</h2><div className="workspace-checks"><div><b>01</b><span><strong>Build Brief</strong><small>Problem, users, outcome, requirements and constraints.</small></span></div><div><b>02</b><span><strong>Application Map</strong><small>Screens, roles, permissions, workflows and data.</small></span></div><div><b>03</b><span><strong>Automation Map</strong><small>Triggers, conditions, actions, approvals and exceptions.</small></span></div><div><b>04</b><span><strong>Prototype Plan</strong><small>Smallest useful version, test criteria and launch gate.</small></span></div></div></section><section className="workspace-panel automation-panel"><span className="product-tag">Automation direction</span><h2>Work the system can perform</h2><p>{project?.automation_summary||"Automation candidates are generated from the discovery intake and refined during architecture review."}</p><div className="automation-row"><strong>Factory rule</strong><small><b>Trigger:</b> Events, schedules, incoming data, or status changes</small><small><b>Action:</b> Evaluate → act → log → notify</small><small><b>Human control:</b> Required for consequential approvals and exceptions</small></div></section></div>
+      <ArchitecturePanel projectSlug={id}/>
+    </section>
+  </main>
+}
