@@ -3,11 +3,10 @@
 import {useEffect,useState} from "react";
 import styles from "./login.module.css";
 
-const SUPABASE_URL="https://xqdsmbyealtammgmpsqe.supabase.co";
-const SUPABASE_KEY="sb_publishable_78q5LVudkA7u2hqsecLmAw_br2XlkUB";
+const SUPABASE_URL=process.env.NEXT_PUBLIC_SUPABASE_URL||"https://xqdsmbyealtammgmpsqe.supabase.co";
+const SUPABASE_KEY=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||"sb_publishable_78q5LVudkA7u2hqsecLmAw_br2XlkUB";
 const SESSION_KEY="airealsolutions.factory.session.v1";
 const OWNER_EMAIL="marcspencer28461@gmail.com";
-const RECOVERY_REDIRECT="https://airealsolutions-aw3l.vercel.app/login";
 
 type Session={access_token:string;refresh_token?:string;expires_in?:number;expires_at?:number;user:{id:string;email?:string}};
 
@@ -26,6 +25,10 @@ async function fetchUser(token:string){
 function persist(session:Session){
   const expiresAt=session.expires_at||Math.floor(Date.now()/1000)+(session.expires_in||3600);
   localStorage.setItem(SESSION_KEY,JSON.stringify({...session,expires_at:expiresAt}));
+}
+function recoveryRedirect(){
+  const configured=process.env.NEXT_PUBLIC_FACTORY_AUTH_REDIRECT;
+  return configured||`${window.location.origin}/login`;
 }
 
 export default function FactoryLogin(){
@@ -72,7 +75,7 @@ export default function FactoryLogin(){
     if(!email.trim())return setMessage("Enter your email address first.");
     setBusy(true);setMessage("");
     try{
-      await authRequest(`recover?redirect_to=${encodeURIComponent(RECOVERY_REDIRECT)}`,{email:email.trim()});
+      await authRequest(`recover?redirect_to=${encodeURIComponent(recoveryRedirect())}`,{email:email.trim()});
       setMessage("Password reset email sent. Use the newest email when it arrives.");
     }catch(e){setMessage(e instanceof Error?e.message:"Could not send the password reset email.");}finally{setBusy(false)}
   }
