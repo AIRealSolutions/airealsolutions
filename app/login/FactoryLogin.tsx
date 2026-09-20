@@ -28,7 +28,7 @@ function persist(session:Session){
 }
 function recoveryRedirect(){
   const configured=process.env.NEXT_PUBLIC_FACTORY_AUTH_REDIRECT;
-  return configured||`${window.location.origin}/login`;
+  return configured||"https://airealsolutions.com/login";
 }
 
 export default function FactoryLogin(){
@@ -46,6 +46,21 @@ export default function FactoryLogin(){
       const hash=new URLSearchParams(window.location.hash.replace(/^#/,""));
       const access=hash.get("access_token");
       const recoveryMode=hash.get("type")==="recovery";
+      const query=new URLSearchParams(window.location.search);
+      const code=query.get("code");
+      if(code){
+        setRecovery(true);
+        setMessage("Verifying your password reset link…");
+        try{
+          const session=await authRequest("token?grant_type=pkce",{auth_code:code}) as Session;
+          if(!session?.access_token)throw new Error("No recovery session was returned.");
+          persist(session);setEmail(session.user?.email||OWNER_EMAIL);
+          window.history.replaceState({},"",window.location.pathname);
+          setMessage("Choose a new password for your Factory account.");return;
+        }catch{
+          setMessage("This password reset link could not be verified. Request a new reset link.");return;
+        }
+      }
       if(access){
         const user=await fetchUser(access);
         const session:Session={access_token:access,refresh_token:hash.get("refresh_token")||undefined,expires_in:Number(hash.get("expires_in")||3600),user};
