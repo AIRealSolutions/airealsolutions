@@ -546,3 +546,33 @@ a.bannerCard:hover {
 .table a[href^="tel:"] {
   white-space: nowrap;
 }
+
+/* Today's bet on the setup screen */
+.betBox {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 14px 12px;
+  margin: 0 0 14px;
+}
+.betBox legend {
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0 6px;
+}
+.betGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.betGrid span {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.betGrid .input {
+  padding: 10px 8px;
+  text-align: center;
+}

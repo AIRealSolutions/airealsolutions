@@ -9,6 +9,7 @@ import styles from "../golf.module.css";
 
 type HoleEntry = { strokes: (number | null)[]; partnerSeat: number | null; loneWolf: boolean; comment: string };
 type Draft = {
+  bet?: number;
   phase: "setup" | "play" | "review";
   courseId: number | null;
   playedOn: string;
@@ -43,8 +44,9 @@ export default function WolfScorecard({
   roster: string[];
 }) {
   const rules = settings.games.wolf.rules;
-  const bet = settings.betPerPoint;
   const [draft, setDraft] = useState<Draft>(() => newDraft(courses[0]?.id ?? null));
+  // Today's bet: starts from the control panel, can be changed for this round only.
+  const bet = draft.bet ?? settings.betPerPoint;
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -160,6 +162,19 @@ export default function WolfScorecard({
             )}
           </div>
           <label className={styles.field}>
+            <span>Today's bet ($ per point, 0 for no money)</span>
+            <input
+              className={styles.input}
+              type="number"
+              inputMode="decimal"
+              min={0}
+              max={1000}
+              step="0.25"
+              value={bet}
+              onChange={(e) => update({ bet: Math.max(0, Math.min(1000, Number(e.target.value) || 0)) })}
+            />
+          </label>
+          <label className={styles.field}>
             <span>Your name (optional, shown as scorekeeper)</span>
             <input
               className={styles.input}
@@ -207,7 +222,7 @@ export default function WolfScorecard({
             courseId: course.id,
             playedOn: draft.playedOn,
             submittedBy: draft.submittedBy,
-            settings: { format: "wolf", rules, betPerPoint: bet },
+            settings: { format: "wolf", rules: { ...rules, betPerPoint: bet }, betPerPoint: bet },
             players: names,
             holes: completed.map(({ h, i }) => ({
               number: course.holes[i].number,
