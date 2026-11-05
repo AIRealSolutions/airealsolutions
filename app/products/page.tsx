@@ -17,6 +17,7 @@ const products = [
   { name: "ElectionAgents.com", tag: "Campaign Technology", text: "Campaign operations, outreach, communication, digital activity, events, fundraising, scheduling, and agent-assisted campaign automations.", url: "https://electionagents.com" },
   { name: "CemeteryBuilder.ai", tag: "Digital Heritage", text: "Cemetery records, mapping, memorial information, digital heritage tools, and workflows for maintaining community records.", url: "https://cemeterybuilder.ai" },
   { name: "SignForge", tag: "Business Operations", text: "A production operating system for signs, apparel, promotional products, quoting, approvals, production workflow, notifications, and equipment integration.", url: "https://github.com/AIRealSolutions/SignForge" },
+  { name: "Golf Buddy", tag: "Community", text: "A free Wolf scorecard for our golf group: score on your phone, comment on every hole, share the round and follow the season leaderboard. A small example of what we build.", url: "/golf", internal: true },
   { name: "USA HUD Homes", tag: "Real Estate Technology", text: "A buyer-focused platform for HUD-owned homes, education, alerts, property discovery, lead generation, and automated follow-up.", url: "https://usahudhomes.com" },
 ];
 

@@ -1,0 +1,415 @@
+.golf {
+  --green: #166534;
+  --green-soft: #ecfdf3;
+  --gold: #b45309;
+  padding-bottom: 60px;
+}
+
+.golf .nav a {
+  display: inline-flex;
+}
+@media (max-width: 620px) {
+  .golf .nav {
+    gap: 12px;
+    font-size: 0.85rem;
+  }
+  .golf .nav a:first-child {
+    display: none;
+  }
+}
+
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+@media (max-width: 620px) {
+  .wrap {
+    padding: 0 16px;
+  }
+}
+
+/* Company banner */
+.banner {
+  max-width: 1180px;
+  margin: 0 auto 28px;
+  padding: 0 28px;
+}
+.bannerLabel {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.bannerRow {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+.bannerCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+a.bannerCard:hover {
+  border-color: var(--green);
+}
+.bannerCard strong {
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+.bannerCard span {
+  color: var(--muted);
+}
+.bannerCard em {
+  margin-top: auto;
+  font-style: normal;
+  font-weight: 700;
+  color: var(--green);
+}
+@media (max-width: 1000px) {
+  .bannerRow {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 220px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 6px;
+  }
+  .bannerCard {
+    scroll-snap-align: start;
+  }
+}
+@media (max-width: 620px) {
+  .banner {
+    padding: 0 16px;
+  }
+}
+
+/* Landing */
+.hero {
+  padding: 24px 0 36px;
+}
+.hero h1 {
+  font-size: clamp(2.4rem, 6vw, 4.6rem);
+}
+.hero h1 span {
+  color: var(--green);
+}
+.lead {
+  font-size: 1.12rem;
+  color: var(--muted);
+  max-width: 680px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+.greenButton {
+  background: var(--green);
+  color: #fff;
+}
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 800px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 22px;
+  margin-bottom: 20px;
+}
+.card h2 {
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.list li {
+  border-top: 1px solid var(--line);
+  padding: 12px 0;
+}
+.list li:first-child {
+  border-top: 0;
+}
+.list a {
+  display: block;
+}
+.list small {
+  color: var(--muted);
+  display: block;
+}
+.rules {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+.muted {
+  color: var(--muted);
+}
+
+/* Tables */
+.tableScroll {
+  overflow-x: auto;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+.table th,
+.table td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.table th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.num {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+.pts {
+  display: inline-block;
+  min-width: 22px;
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: var(--green);
+  font-weight: 800;
+  font-size: 0.78rem;
+  text-align: center;
+}
+.comment {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 0.86rem;
+}
+.winnerRow td {
+  font-weight: 800;
+}
+
+/* Scorecard */
+.scorecard {
+  max-width: 640px;
+  margin: 0 auto;
+}
+.field {
+  display: block;
+  margin-bottom: 14px;
+}
+.field span {
+  display: block;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+}
+.input,
+.textarea,
+.select {
+  width: 100%;
+  font: inherit;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+}
+.textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+.playerRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.iconButton {
+  font: inherit;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 12px;
+  min-width: 46px;
+  cursor: pointer;
+  font-weight: 800;
+}
+.holeHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.holeHead h2 {
+  font-size: 2rem;
+  margin: 0;
+}
+.holeMeta {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.wolfBadge {
+  display: inline-block;
+  background: var(--ink);
+  color: #fff;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin: 10px 0 12px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.chip {
+  font: inherit;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  cursor: pointer;
+  font-weight: 700;
+}
+.chipOn {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+.chipLone {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.chipLone.chipOn {
+  background: var(--gold);
+  color: #fff;
+}
+.strokeRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.strokeRow small {
+  display: block;
+  color: var(--muted);
+}
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stepper button {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-size: 1.4rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.stepper output {
+  width: 44px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.holeNav {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 18px;
+}
+.holeNav .button {
+  flex: 1;
+}
+.dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 12px 0 0;
+}
+.dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.dotDone {
+  background: var(--green-soft);
+  border-color: var(--green);
+  color: var(--green);
+}
+.dotCurrent {
+  outline: 2px solid var(--ink);
+}
+.running {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.running strong {
+  color: var(--ink);
+}
+.error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+.textButton {
+  font: inherit;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.golf :global(.nav-cta),
+.golf :global(.brand) {
+  white-space: nowrap;
+}
+.table td.num {
+  white-space: nowrap;
+}

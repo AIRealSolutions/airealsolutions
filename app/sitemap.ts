@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const routes = ["", "/services", "/products", "/about", "/contact", "/build", "/factory"];
+  const routes = ["", "/services", "/products", "/about", "/contact", "/build", "/factory", "/golf", "/golf/leaderboard"];
 
   return routes.map((route, index) => ({
     url: `https://airealsolutions.com${route}`,
