@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { golfRpc, type Course } from "../lib/api";
+import type { Course, GolfSettings } from "../lib/api";
+import { money, settleTeams } from "../lib/settle";
+import PostRound, { RosterList } from "../PostRound";
 import {
-  POINTS_RULES,
   TEAM_NAMES,
   TEAMS,
   isPointsHoleComplete,
@@ -48,12 +48,20 @@ function TeamTag({ team }: { team: Team }) {
   return <span className={`${styles.teamTag} ${team === "black" ? styles.teamBlack : styles.teamWhite}`}>{TEAM_NAMES[team]}</span>;
 }
 
-export default function PointsScorecard({ courses }: { courses: Course[] }) {
-  const router = useRouter();
+export default function PointsScorecard({
+  courses,
+  settings,
+  roster,
+}: {
+  courses: Course[];
+  settings: GolfSettings;
+  roster: string[];
+}) {
+  const rules = settings.games.points.rules;
+  const bet = settings.betPerPoint;
   const [draft, setDraft] = useState<Draft>(() => newDraft(courses[0]?.id ?? null));
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     try {
@@ -76,7 +84,7 @@ export default function PointsScorecard({ courses }: { courses: Course[] }) {
     () => draft.holes.map((h, i) => ({ ...h, par: course?.holes[i]?.par ?? 4, teams })),
     [draft.holes, teams, course],
   );
-  const running = useMemo(() => pointsTotals(holeInputs, n), [holeInputs, n]);
+  const running = useMemo(() => pointsTotals(holeInputs, n, rules), [holeInputs, n, rules]);
   const update = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
   const updateHole = (index: number, patch: Partial<HoleEntry>) =>
     setDraft((d) => ({ ...d, holes: d.holes.map((h, i) => (i === index ? { ...h, ...patch } : h)) }));
@@ -162,6 +170,7 @@ export default function PointsScorecard({ courses }: { courses: Course[] }) {
                   value={name}
                   maxLength={40}
                   autoComplete="off"
+                  list="golf-roster"
                   onChange={(e) => update({ players: names.map((p, j) => (j === i ? e.target.value : p)) })}
                 />
                 <button
@@ -184,6 +193,7 @@ export default function PointsScorecard({ courses }: { courses: Course[] }) {
                 )}
               </div>
             ))}
+            <RosterList names={roster} />
             <p style={{ display: "flex", gap: 16, margin: 0 }}>
               {n < 8 && (
                 <button
@@ -225,22 +235,19 @@ export default function PointsScorecard({ courses }: { courses: Course[] }) {
   /* ---------- Review & submit ---------- */
   if (draft.phase === "review") {
     const completed = holeInputs.map((h, i) => ({ h, i })).filter(({ h }) => isPointsHoleComplete(h));
-    const submit = async () => {
-      if (!completed.length) return setError("Finish at least one hole before posting the round.");
-      setSubmitting(true);
-      setError(null);
-      try {
-        const id = await golfRpc<string>("golf_submit_round", {
-          p: {
+    const payouts = settleTeams(teams, running.team, bet);
+    const buildPayload = () =>
+      completed.length
+        ? {
             format: "points",
             courseId: course.id,
             playedOn: draft.playedOn,
             submittedBy: draft.submittedBy,
-            settings: { format: "points", rules: POINTS_RULES },
+            settings: { format: "points", rules, betPerPoint: bet },
             players: names,
             teams,
             holes: completed.map(({ h, i }) => {
-              const outcome = scorePointsHole(h)!;
+              const outcome = scorePointsHole(h, rules)!;
               return {
                 number: course.holes[i].number,
                 par: course.holes[i].par,
@@ -255,17 +262,8 @@ export default function PointsScorecard({ courses }: { courses: Course[] }) {
                 comment: draft.holes[i].comment.trim(),
               };
             }),
-          },
-        });
-        try {
-          localStorage.removeItem(STORAGE_KEY);
-        } catch {}
-        router.push(`/golf/rounds/${id}`);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Could not post the round. Your card is saved; try again.");
-        setSubmitting(false);
-      }
-    };
+          }
+        : "Finish at least one hole before posting the round.";
     return (
       <div className={styles.scorecard}>
         <section className={styles.card}>
@@ -274,7 +272,6 @@ export default function PointsScorecard({ courses }: { courses: Course[] }) {
           <p className={styles.muted}>
             {completed.length} of {course.holes.length} holes complete. Unfinished holes are left off.
           </p>
-          {error && <p className={styles.error}>{error}</p>}
           {teamScore}
           <div className={styles.tableScroll}>
             <table className={styles.table}>
@@ -284,6 +281,7 @@ export default function PointsScorecard({ courses }: { courses: Course[] }) {
                   <th>Team</th>
                   <th className={styles.num}>Strokes</th>
                   <th className={styles.num}>Bonus pts</th>
+                  {bet > 0 && <th className={styles.num}>${bet}/pt</th>}
                 </tr>
               </thead>
               <tbody>
@@ -297,19 +295,18 @@ export default function PointsScorecard({ courses }: { courses: Course[] }) {
                       {completed.reduce((sum, { h }) => sum + (h.strokes[i] as number), 0)}
                     </td>
                     <td className={styles.num}>{running.player[i]}</td>
+                    {bet > 0 && <td className={styles.num}>{money(payouts[i])}</td>}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <div className={styles.holeNav}>
-            <button type="button" className="button button-secondary" onClick={() => update({ phase: "play" })}>
-              Back to the card
-            </button>
-            <button type="button" className={`button ${styles.greenButton}`} onClick={submit} disabled={submitting}>
-              {submitting ? "Posting…" : "Post the round"}
-            </button>
-          </div>
+          <PostRound
+            pinRequired={settings.pinRequired}
+            draftKey={STORAGE_KEY}
+            buildPayload={buildPayload}
+            onBack={() => update({ phase: "play" })}
+          />
         </section>
       </div>
     );
@@ -319,7 +316,7 @@ export default function PointsScorecard({ courses }: { courses: Course[] }) {
   const i = draft.current;
   const hole = course.holes[i];
   const entry = draft.holes[i];
-  const outcome = scorePointsHole(holeInputs[i]);
+  const outcome = scorePointsHole(holeInputs[i], rules);
   const setStroke = (seat: number, delta: number) => {
     const current = entry.strokes[seat] ?? hole.par;
     const next = entry.strokes[seat] === null ? hole.par : Math.min(15, Math.max(1, current + delta));

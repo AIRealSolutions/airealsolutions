@@ -10,6 +10,7 @@ export type Team = "black" | "white";
 export const TEAMS: Team[] = ["black", "white"];
 export const TEAM_NAMES: Record<Team, string> = { black: "Black Belt", white: "White Belt" };
 export const POINTS_RULES = { bestBall: 1, birdie: 1, eagleBonus: 1, sandSave: 1, closest: 1 };
+export type PointsRules = typeof POINTS_RULES;
 
 export type PointsHoleInput = {
   par: number;
@@ -72,11 +73,11 @@ export function scorePointsHole(hole: PointsHoleInput, rules = POINTS_RULES): Po
   return { points, bonuses, bestBall, teamPoints };
 }
 
-export function pointsTotals(holes: PointsHoleInput[], playerCount: number) {
+export function pointsTotals(holes: PointsHoleInput[], playerCount: number, rules = POINTS_RULES) {
   const team: Record<Team, number> = { black: 0, white: 0 };
   const player = Array(playerCount).fill(0);
   holes.forEach((hole) => {
-    const outcome = scorePointsHole(hole);
+    const outcome = scorePointsHole(hole, rules);
     if (!outcome) return;
     team.black += outcome.teamPoints.black;
     team.white += outcome.teamPoints.white;

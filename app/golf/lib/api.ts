@@ -29,6 +29,7 @@ export type SavedHole = {
 export type SavedRound = {
   id: string;
   format: "wolf" | "points";
+  settings?: { betPerPoint?: number | string } | null;
   teamPoints: { black: number; white: number } | null;
   playedOn: string;
   submittedBy: string | null;
@@ -70,3 +71,58 @@ export async function golfRead<T>(fn: string, args: Record<string, unknown>, fal
 
 export const formatDate = (iso: string) =>
   new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+/* ---------- Settings (bet price, games, rule values) ---------- */
+export type PointsRulesSetting = { bestBall: number; birdie: number; eagleBonus: number; sandSave: number; closest: number };
+export type WolfRulesSetting = { teamWin: number; opponentsWin: number; loneWin: number; loneLoss: number };
+export type GolfSettings = {
+  betPerPoint: number;
+  defaultGame: "points" | "wolf";
+  pinRequired: boolean;
+  games: {
+    points: { enabled: boolean; rules: PointsRulesSetting };
+    wolf: { enabled: boolean; rules: WolfRulesSetting };
+  };
+};
+export const DEFAULT_SETTINGS: GolfSettings = {
+  betPerPoint: 0,
+  defaultGame: "points",
+  pinRequired: false,
+  games: {
+    points: { enabled: true, rules: { bestBall: 1, birdie: 1, eagleBonus: 1, sandSave: 1, closest: 1 } },
+    wolf: { enabled: true, rules: { teamWin: 2, opponentsWin: 3, loneWin: 4, loneLoss: 1 } },
+  },
+};
+
+/** Normalizes settings from the server over the defaults (works before the admin migration is applied). */
+export function normalizeSettings(s: Partial<GolfSettings> | null | undefined): GolfSettings {
+  if (!s) return DEFAULT_SETTINGS;
+  const d = DEFAULT_SETTINGS.games;
+  return {
+    betPerPoint: Number(s.betPerPoint ?? 0),
+    defaultGame: s.defaultGame === "wolf" ? "wolf" : "points",
+    pinRequired: Boolean(s.pinRequired),
+    games: {
+      points: { enabled: s.games?.points?.enabled ?? true, rules: { ...d.points.rules, ...s.games?.points?.rules } },
+      wolf: { enabled: s.games?.wolf?.enabled ?? true, rules: { ...d.wolf.rules, ...s.games?.wolf?.rules } },
+    },
+  };
+}
+
+export async function getSettings(): Promise<GolfSettings> {
+  return normalizeSettings(await golfRead<Partial<GolfSettings> | null>("golf_settings", {}, null, 30));
+}
+
+export const getRoster = () => golfRead<string[]>("golf_roster", {}, [], 60);
+
+export const PIN_STORAGE_KEY = "golfbuddy.pin.v1";
+
+/** Posts a round. Returns the new round id, or throws (error.pin = true for a PIN problem). */
+export async function submitRound(payload: Record<string, unknown>): Promise<string> {
+  const result = await golfRpc<string | { id?: string; error?: string; pin?: boolean }>("golf_submit_round", { p: payload });
+  if (typeof result === "string") return result; // older server version
+  if (result?.id) return result.id;
+  const error = new Error(result?.error || "Could not post the round.") as Error & { pin?: boolean };
+  error.pin = Boolean(result?.pin);
+  throw error;
+}

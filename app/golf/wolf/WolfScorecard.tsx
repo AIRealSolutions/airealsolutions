@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { golfRpc, type Course } from "../lib/api";
-import { DEFAULT_RULES, isHoleComplete, scoreHole, totals, wolfSeatFor, type HoleInput } from "../lib/wolf";
+import type { Course, GolfSettings } from "../lib/api";
+import { isHoleComplete, scoreHole, totals, wolfSeatFor, type HoleInput } from "../lib/wolf";
+import { money, settleWolf } from "../lib/settle";
+import PostRound, { RosterList } from "../PostRound";
 import styles from "../golf.module.css";
 
 type HoleEntry = { strokes: (number | null)[]; partnerSeat: number | null; loneWolf: boolean; comment: string };
@@ -32,12 +33,20 @@ const newDraft = (courseId: number | null): Draft => ({
   current: 0,
 });
 
-export default function WolfScorecard({ courses }: { courses: Course[] }) {
-  const router = useRouter();
+export default function WolfScorecard({
+  courses,
+  settings,
+  roster,
+}: {
+  courses: Course[];
+  settings: GolfSettings;
+  roster: string[];
+}) {
+  const rules = settings.games.wolf.rules;
+  const bet = settings.betPerPoint;
   const [draft, setDraft] = useState<Draft>(() => newDraft(courses[0]?.id ?? null));
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
   // Restore an in-progress round (phone locked, dead zone, page reload...).
   useEffect(() => {
@@ -61,7 +70,7 @@ export default function WolfScorecard({ courses }: { courses: Course[] }) {
     () => draft.holes.map((h, i) => ({ ...h, wolfSeat: wolfSeatFor(i, n) })),
     [draft.holes, n],
   );
-  const running = useMemo(() => totals(holeInputs, n), [holeInputs, n]);
+  const running = useMemo(() => totals(holeInputs, n, rules), [holeInputs, n, rules]);
   const update = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
   const updateHole = (index: number, patch: Partial<HoleEntry>) =>
     setDraft((d) => ({ ...d, holes: d.holes.map((h, i) => (i === index ? { ...h, ...patch } : h)) }));
@@ -128,6 +137,7 @@ export default function WolfScorecard({ courses }: { courses: Course[] }) {
                   value={name}
                   maxLength={40}
                   autoComplete="off"
+                  list="golf-roster"
                   onChange={(e) => update({ players: names.map((p, j) => (j === i ? e.target.value : p)) })}
                 />
                 {n > 3 && (
@@ -142,6 +152,7 @@ export default function WolfScorecard({ courses }: { courses: Course[] }) {
                 )}
               </div>
             ))}
+            <RosterList names={roster} />
             {n < 5 && (
               <button type="button" className={styles.textButton} onClick={() => update({ players: [...names, ""] })}>
                 + Add a player
@@ -189,17 +200,14 @@ export default function WolfScorecard({ courses }: { courses: Course[] }) {
   /* ---------- Review & submit ---------- */
   if (draft.phase === "review") {
     const completed = holeInputs.map((h, i) => ({ h, i })).filter(({ h }) => isHoleComplete(h));
-    const submit = async () => {
-      if (!completed.length) return setError("Finish at least one hole before posting the round.");
-      setSubmitting(true);
-      setError(null);
-      try {
-        const id = await golfRpc<string>("golf_submit_round", {
-          p: {
+    const payouts = settleWolf(running.points, bet);
+    const buildPayload = () =>
+      completed.length
+        ? {
             courseId: course.id,
             playedOn: draft.playedOn,
             submittedBy: draft.submittedBy,
-            settings: { format: "wolf", rules: DEFAULT_RULES },
+            settings: { format: "wolf", rules, betPerPoint: bet },
             players: names,
             holes: completed.map(({ h, i }) => ({
               number: course.holes[i].number,
@@ -208,20 +216,11 @@ export default function WolfScorecard({ courses }: { courses: Course[] }) {
               partnerSeat: h.loneWolf ? null : h.partnerSeat,
               loneWolf: h.loneWolf,
               strokes: h.strokes,
-              points: scoreHole(h)!.points,
+              points: scoreHole(h, rules)!.points,
               comment: draft.holes[i].comment.trim(),
             })),
-          },
-        });
-        try {
-          localStorage.removeItem(STORAGE_KEY);
-        } catch {}
-        router.push(`/golf/rounds/${id}`);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Could not post the round. Your card is saved; try again.");
-        setSubmitting(false);
-      }
-    };
+          }
+        : "Finish at least one hole before posting the round.";
     return (
       <div className={styles.scorecard}>
         <section className={styles.card}>
@@ -230,7 +229,6 @@ export default function WolfScorecard({ courses }: { courses: Course[] }) {
           <p className={styles.muted}>
             {completed.length} of {course.holes.length} holes complete. Unfinished holes are left off.
           </p>
-          {error && <p className={styles.error}>{error}</p>}
           <div className={styles.tableScroll}>
             <table className={styles.table}>
               <thead>
@@ -238,6 +236,7 @@ export default function WolfScorecard({ courses }: { courses: Course[] }) {
                   <th>Player</th>
                   <th className={styles.num}>Strokes</th>
                   <th className={styles.num}>Points</th>
+                  {bet > 0 && <th className={styles.num}>${bet}/pt</th>}
                 </tr>
               </thead>
               <tbody>
@@ -246,19 +245,18 @@ export default function WolfScorecard({ courses }: { courses: Course[] }) {
                     <td>{name}</td>
                     <td className={styles.num}>{running.strokes[i]}</td>
                     <td className={styles.num}>{running.points[i]}</td>
+                    {bet > 0 && <td className={styles.num}>{money(payouts[i])}</td>}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <div className={styles.holeNav}>
-            <button type="button" className="button button-secondary" onClick={() => update({ phase: "play" })}>
-              Back to the card
-            </button>
-            <button type="button" className={`button ${styles.greenButton}`} onClick={submit} disabled={submitting}>
-              {submitting ? "Posting…" : "Post the round"}
-            </button>
-          </div>
+          <PostRound
+            pinRequired={settings.pinRequired}
+            draftKey={STORAGE_KEY}
+            buildPayload={buildPayload}
+            onBack={() => update({ phase: "play" })}
+          />
         </section>
       </div>
     );
@@ -270,7 +268,7 @@ export default function WolfScorecard({ courses }: { courses: Course[] }) {
   const entry = draft.holes[i];
   const input = holeInputs[i];
   const wolf = input.wolfSeat;
-  const outcome = scoreHole(input);
+  const outcome = scoreHole(input, rules);
   const setStroke = (seat: number, delta: number) => {
     const current = entry.strokes[seat] ?? hole.par;
     const next = entry.strokes[seat] === null ? hole.par : Math.min(15, Math.max(1, current + delta));
