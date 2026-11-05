@@ -19,8 +19,17 @@ import styles from "../golf.module.css";
 
 type HoleEntry = { strokes: (number | null)[]; sandSaves: boolean[]; closest: number | null; comment: string };
 type RoundBet = { front: number; back: number; total: number; perDot: number };
+type DotRules = GolfSettings["games"]["points"]["rules"];
+const DOT_FIELDS: [keyof DotRules, string][] = [
+  ["bestBall", "Best ball (per hole)"],
+  ["birdie", "Birdie"],
+  ["eagleBonus", "Extra for eagle or better"],
+  ["sandSave", "Sand save"],
+  ["closest", "Closest to the hole"],
+];
 type Draft = {
   bet?: RoundBet;
+  rules?: Partial<DotRules>;
   phase: "setup" | "play" | "review";
   courseId: number | null;
   playedOn: string;
@@ -60,8 +69,10 @@ export default function PointsScorecard({
   settings: GolfSettings;
   roster: string[];
 }) {
-  const rules = settings.games.points.rules;
+  const panelRules = settings.games.points.rules;
   const [draft, setDraft] = useState<Draft>(() => newDraft(courses[0]?.id ?? null));
+  // Dot values: from the control panel unless changed for this round on the setup screen.
+  const rules = useMemo(() => ({ ...panelRules, ...draft.rules }), [panelRules, draft.rules]);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -236,6 +247,26 @@ export default function PointsScorecard({
               </button>
             </p>
           </div>
+          <details className={styles.rulesBox}>
+            <summary>Dot values for this round</summary>
+            {DOT_FIELDS.map(([key, label]) => (
+              <label className={styles.ruleRow} key={key}>
+                <span>{label}</span>
+                <input
+                  className={styles.input}
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={99}
+                  value={rules[key]}
+                  onChange={(e) =>
+                    update({ rules: { ...draft.rules, [key]: Math.max(0, Math.min(99, Number(e.target.value) || 0)) } as Partial<DotRules> })
+                  }
+                />
+              </label>
+            ))}
+            <small className={styles.muted}>Starts from the control panel. Changes here only apply to this round.</small>
+          </details>
           <fieldset className={styles.betBox}>
             <legend>Today's bet ($ per player)</legend>
             <div className={styles.betGrid}>

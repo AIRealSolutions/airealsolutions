@@ -8,8 +8,16 @@ import PostRound, { RosterList } from "../PostRound";
 import styles from "../golf.module.css";
 
 type HoleEntry = { strokes: (number | null)[]; partnerSeat: number | null; loneWolf: boolean; comment: string };
+type WolfRules = GolfSettings["games"]["wolf"]["rules"];
+const WOLF_FIELDS: [keyof WolfRules, string][] = [
+  ["teamWin", "Wolf + partner win (each)"],
+  ["opponentsWin", "Other side wins (each)"],
+  ["loneWin", "Lone Wolf wins"],
+  ["loneLoss", "Lone Wolf loses (to each opponent)"],
+];
 type Draft = {
   bet?: number;
+  rules?: Partial<WolfRules>;
   phase: "setup" | "play" | "review";
   courseId: number | null;
   playedOn: string;
@@ -43,8 +51,10 @@ export default function WolfScorecard({
   settings: GolfSettings;
   roster: string[];
 }) {
-  const rules = settings.games.wolf.rules;
+  const panelRules = settings.games.wolf.rules;
   const [draft, setDraft] = useState<Draft>(() => newDraft(courses[0]?.id ?? null));
+  // Point values: from the control panel unless changed for this round on the setup screen.
+  const rules = useMemo(() => ({ ...panelRules, ...draft.rules }), [panelRules, draft.rules]);
   // Today's bet: starts from the control panel, can be changed for this round only.
   const bet = draft.bet ?? settings.betPerPoint;
   const [loaded, setLoaded] = useState(false);
@@ -161,6 +171,26 @@ export default function WolfScorecard({
               </button>
             )}
           </div>
+          <details className={styles.rulesBox}>
+            <summary>Point values for this round</summary>
+            {WOLF_FIELDS.map(([key, label]) => (
+              <label className={styles.ruleRow} key={key}>
+                <span>{label}</span>
+                <input
+                  className={styles.input}
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={99}
+                  value={rules[key]}
+                  onChange={(e) =>
+                    update({ rules: { ...draft.rules, [key]: Math.max(0, Math.min(99, Number(e.target.value) || 0)) } as Partial<WolfRules> })
+                  }
+                />
+              </label>
+            ))}
+            <small className={styles.muted}>Starts from the control panel. Changes here only apply to this round.</small>
+          </details>
           <label className={styles.field}>
             <span>Today's bet ($ per point, 0 for no money)</span>
             <input

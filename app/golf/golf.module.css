@@ -576,3 +576,19 @@ a.bannerCard:hover {
   padding: 10px 8px;
   text-align: center;
 }
+
+/* Per-round rule values on the setup screen */
+.rulesBox {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 14px;
+  margin: 0 0 14px;
+}
+.rulesBox summary {
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.rulesBox[open] summary {
+  margin-bottom: 8px;
+}
