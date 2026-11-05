@@ -1,6 +1,8 @@
 // Golf Buddy data access. Everything goes through SECURITY DEFINER RPCs in the
 // shared Supabase project (see docs/golfbuddy-database.sql), so only the
 // browser-safe publishable key is ever used here.
+/** Public address used for shared links. */
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://airealsolutions.com").replace(/\/$/, "");
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://xqdsmbyealtammgmpsqe.supabase.co";
 export const SUPABASE_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_78q5LVudkA7u2hqsecLmAw_br2XlkUB";
