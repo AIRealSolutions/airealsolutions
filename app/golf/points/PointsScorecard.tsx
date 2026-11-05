@@ -18,7 +18,9 @@ import {
 import styles from "../golf.module.css";
 
 type HoleEntry = { strokes: (number | null)[]; sandSaves: boolean[]; closest: number | null; comment: string };
+type RoundBet = { front: number; back: number; total: number; perDot: number };
 type Draft = {
+  bet?: RoundBet;
   phase: "setup" | "play" | "review";
   courseId: number | null;
   playedOn: string;
@@ -59,7 +61,6 @@ export default function PointsScorecard({
   roster: string[];
 }) {
   const rules = settings.games.points.rules;
-  const bet = settings.betPerPoint;
   const [draft, setDraft] = useState<Draft>(() => newDraft(courses[0]?.id ?? null));
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,7 +102,13 @@ export default function PointsScorecard({
     );
   }
 
-  const nassau = nassauOf(rules);
+  // Today's bet: starts from the control panel, can be changed for this round only.
+  const defaults = nassauOf(rules);
+  const roundBet: RoundBet = draft.bet ?? { ...defaults, perDot: settings.betPerPoint };
+  const nassau = { front: roundBet.front, back: roundBet.back, total: roundBet.total };
+  const bet = roundBet.perDot;
+  const setBet = (key: keyof RoundBet, value: string) =>
+    update({ bet: { ...roundBet, [key]: Math.max(0, Math.min(1000, Number(value) || 0)) } });
   const hasMoney = bet > 0 || nassau.front > 0 || nassau.back > 0 || nassau.total > 0;
   const scoredHoles = holeInputs.flatMap((h, idx) => {
     const o = scorePointsHole(h, rules);
@@ -229,6 +236,33 @@ export default function PointsScorecard({
               </button>
             </p>
           </div>
+          <fieldset className={styles.betBox}>
+            <legend>Today's bet ($ per player)</legend>
+            <div className={styles.betGrid}>
+              {(
+                [
+                  ["front", "Front 9"],
+                  ["back", "Back 9"],
+                  ["total", "Total"],
+                  ["perDot", "Per dot"],
+                ] as [keyof RoundBet, string][]
+              ).map(([key, label]) => (
+                <label key={key}>
+                  <span>{label}</span>
+                  <input
+                    className={styles.input}
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    max={1000}
+                    value={roundBet[key]}
+                    onChange={(e) => setBet(key, e.target.value)}
+                  />
+                </label>
+              ))}
+            </div>
+            <small className={styles.muted}>Losing team pays each segment per player; winners split it. Ties push. Use 0 for no money.</small>
+          </fieldset>
           <label className={styles.field}>
             <span>Your name (optional, shown as scorekeeper)</span>
             <input className={styles.input} value={draft.submittedBy} maxLength={60} onChange={(e) => update({ submittedBy: e.target.value })} />
@@ -262,7 +296,11 @@ export default function PointsScorecard({
             courseId: course.id,
             playedOn: draft.playedOn,
             submittedBy: draft.submittedBy,
-            settings: { format: "points", rules, betPerPoint: bet },
+            settings: {
+              format: "points",
+              rules: { ...rules, nassauFront: nassau.front, nassauBack: nassau.back, nassauTotal: nassau.total, betPerPoint: bet },
+              betPerPoint: bet,
+            },
             players: names,
             teams,
             holes: completed.map(({ h, i }) => {

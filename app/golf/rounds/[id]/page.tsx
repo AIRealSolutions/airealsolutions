@@ -57,7 +57,7 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
   const name = (seat: number | null | undefined) =>
     seat === null || seat === undefined ? "" : (round.players.find((p) => p.seat === seat)?.name ?? "");
   const resultLabel = { win: "W", loss: "L", tie: "T" } as const;
-  const bet = Number(round.settings?.betPerPoint ?? 0);
+  const bet = Number(round.settings?.rules?.betPerPoint ?? round.settings?.betPerPoint ?? 0);
   const nassau = nassauOf(round.settings?.rules);
   const bySeat = [...round.players].sort((a, b) => a.seat - b.seat);
   const dots = isPoints
