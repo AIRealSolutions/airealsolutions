@@ -52,6 +52,14 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
   if (!round) notFound();
 
   const isPoints = round.format === "points";
+  const scramble = isPoints && Boolean(round.settings?.rules?.scramble);
+  // Captain's choice: show one column per team (its first player carries the team score).
+  const holeColumns = scramble
+    ? (["black", "white"] as Team[]).flatMap((t) => {
+        const p = round.players.find((x) => x.team === t);
+        return p ? [{ ...p, name: TEAM_NAMES[t] }] : [];
+      })
+    : round.players;
   const ranked = standings(round);
   const { who, verb } = winnerText(round);
   const name = (seat: number | null | undefined) =>
@@ -79,7 +87,7 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
     <div className={styles.wrap}>
       <section className={styles.hero}>
         <p className="eyebrow">
-          {isPoints ? "Dots" : "Wolf"} · {round.course.name} · {formatDate(round.playedOn)}
+          {isPoints ? (scramble ? "Dots · Captain's choice" : "Dots") : "Wolf"} · {round.course.name} · {formatDate(round.playedOn)}
         </p>
         <h1>
           {who} <span>{verb}</span>
@@ -183,7 +191,7 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
               <tr>
                 <th>Hole</th>
                 <th>{isPoints ? "Result" : "Wolf"}</th>
-                {round.players.map((p) => (
+                {holeColumns.map((p) => (
                   <th key={p.seat} className={styles.num}>
                     {p.name}
                   </th>
@@ -218,7 +226,7 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
                       )}
                       {h.comment && <div className={styles.comment}>“{h.comment}”</div>}
                     </td>
-                    {round.players.map((p) => {
+                    {holeColumns.map((p) => {
                       const s = h.strokes[p.seat];
                       const label = isPoints ? scoreLabel(h.par, s) : null;
                       const sand = isPoints && ex.sandSaves?.includes(p.seat);
