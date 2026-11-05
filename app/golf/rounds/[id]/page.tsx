@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { formatDate, golfRead, type SavedRound } from "../../lib/api";
+import { getPin } from "../../lib/pin";
 import { TEAM_NAMES, nassauOf, scoreLabel, type Team } from "../../lib/points";
 import { money, settleDots, settleWolf } from "../../lib/settle";
 import ShareButton from "./ShareButton";
@@ -10,7 +11,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function getRound(id: string) {
   if (!UUID.test(id)) return null;
-  const round = await golfRead<SavedRound | null>("golf_round", { p_id: id }, null, 60);
+  const round = await golfRead<SavedRound | null>("golf_round", { p_id: id, p_pin: await getPin() }, null, 60);
   return round?.players?.length && round.holes?.length ? round : null;
 }
 

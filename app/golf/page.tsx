@@ -1,4 +1,5 @@
 import { formatDate, getSettings, golfRead, type RecentRound } from "./lib/api";
+import { getPin } from "./lib/pin";
 import styles from "./golf.module.css";
 
 export const metadata = {
@@ -8,7 +9,7 @@ export const metadata = {
 
 export default async function GolfHome() {
   const [recent, settings] = await Promise.all([
-    golfRead<RecentRound[]>("golf_recent_rounds", { p_limit: 8 }, []),
+    golfRead<RecentRound[]>("golf_recent_rounds", { p_limit: 8, p_pin: await getPin() }, []),
     getSettings(),
   ]);
   const w = settings.games.wolf.rules;

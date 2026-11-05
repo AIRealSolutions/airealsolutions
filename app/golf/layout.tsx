@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import CompanyBanner from "./CompanyBanner";
+import PinGate from "./PinGate";
+import { getSettings } from "./lib/api";
+import { checkPin, getPin, getPinError } from "./lib/pin";
 import styles from "./golf.module.css";
 
 export const metadata: Metadata = {
@@ -7,7 +10,17 @@ export const metadata: Metadata = {
   description: "Keep a Wolf scorecard on your phone, add comments on every hole, and share the round with your group.",
 };
 
-export default function GolfLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function GolfLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // Whole site behind the group PIN (the admin PIN works too) once a group PIN is set.
+  const settings = await getSettings();
+  let unlocked = true;
+  let gateError = "";
+  if (settings.pinRequired) {
+    const pin = await getPin();
+    const result = await checkPin(pin);
+    unlocked = Boolean(result.role);
+    gateError = (await getPinError()) || (pin ? result.error ?? "" : "");
+  }
   return (
     <main className={styles.golf}>
       <header className="site-header">
@@ -24,7 +37,7 @@ export default function GolfLayout({ children }: Readonly<{ children: React.Reac
         </nav>
       </header>
       <CompanyBanner />
-      {children}
+      {unlocked ? children : <PinGate error={gateError} />}
     </main>
   );
 }

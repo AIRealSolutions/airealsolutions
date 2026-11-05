@@ -7,22 +7,23 @@ import styles from "./golf.module.css";
 
 type Props = {
   pinRequired: boolean;
+  defaultPin?: string; // the PIN this device unlocked the site with
   draftKey: string;
   buildPayload: () => Record<string, unknown> | string; // a string is a validation message
   onBack: () => void;
 };
 
 /** PIN box + "Post the round" button shared by both scorecards. */
-export default function PostRound({ pinRequired, draftKey, buildPayload, onBack }: Props) {
+export default function PostRound({ pinRequired, defaultPin = "", draftKey, buildPayload, onBack }: Props) {
   const router = useRouter();
   const [pin, setPin] = useState("");
-  const [askPin, setAskPin] = useState(pinRequired);
+  const [askPin, setAskPin] = useState(pinRequired && !defaultPin);
   const [error, setError] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
 
   useEffect(() => {
     try {
-      setPin(localStorage.getItem(PIN_STORAGE_KEY) ?? "");
+      setPin(defaultPin || localStorage.getItem(PIN_STORAGE_KEY) || "");
     } catch {}
   }, []);
 

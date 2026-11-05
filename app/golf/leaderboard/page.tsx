@@ -1,4 +1,5 @@
 import { golfRead, type LeaderRow, type TeamRecord } from "../lib/api";
+import { getPin } from "../lib/pin";
 import styles from "../golf.module.css";
 
 export const metadata = {
@@ -18,9 +19,10 @@ export default async function LeaderboardPage({
   const requested = Number(params.year);
   const year = Number.isInteger(requested) && requested >= 2020 && requested <= thisYear ? requested : thisYear;
   const game: Game = params.game === "wolf" ? "wolf" : "points";
+  const pin = await getPin();
   const [rows, teams] = await Promise.all([
-    golfRead<LeaderRow[]>("golf_leaderboard", { p_year: year, p_format: game }, []),
-    game === "points" ? golfRead<TeamRecord | null>("golf_team_record", { p_year: year }, null) : Promise.resolve(null),
+    golfRead<LeaderRow[]>("golf_leaderboard", { p_year: year, p_format: game, p_pin: pin }, []),
+    game === "points" ? golfRead<TeamRecord | null>("golf_team_record", { p_year: year, p_pin: pin }, null) : Promise.resolve(null),
   ]);
   const href = (g: Game, y = year) => `/golf/leaderboard?game=${g}&year=${y}`;
 
