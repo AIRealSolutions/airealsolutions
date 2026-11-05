@@ -128,7 +128,7 @@ export async function getSettings(): Promise<GolfSettings> {
   return normalizeSettings(await golfRead<Partial<GolfSettings> | null>("golf_settings", {}, null, 30));
 }
 
-export const getRoster = () => golfRead<string[]>("golf_roster", {}, [], 60);
+export const getRoster = (pin = "") => golfRead<string[]>("golf_roster", { p_pin: pin }, [], 60);
 
 export const PIN_STORAGE_KEY = "golfbuddy.pin.v1";
 

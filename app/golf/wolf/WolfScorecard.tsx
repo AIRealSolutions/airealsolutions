@@ -46,10 +46,12 @@ export default function WolfScorecard({
   courses,
   settings,
   roster,
+  pin = "",
 }: {
   courses: Course[];
   settings: GolfSettings;
   roster: string[];
+  pin?: string;
 }) {
   const panelRules = settings.games.wolf.rules;
   const [draft, setDraft] = useState<Draft>(() => newDraft(courses[0]?.id ?? null));
@@ -298,6 +300,7 @@ export default function WolfScorecard({
           </div>
           <PostRound
             pinRequired={settings.pinRequired}
+            defaultPin={pin}
             draftKey={STORAGE_KEY}
             buildPayload={buildPayload}
             onBack={() => update({ phase: "play" })}

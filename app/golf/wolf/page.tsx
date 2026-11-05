@@ -1,4 +1,5 @@
 import { getRoster, getSettings, golfRead, type Course } from "../lib/api";
+import { getPin } from "../lib/pin";
 import WolfScorecard from "./WolfScorecard";
 import styles from "../golf.module.css";
 
@@ -8,10 +9,11 @@ export const metadata = {
 };
 
 export default async function WolfPage() {
+  const pin = await getPin();
   const [courses, settings, roster] = await Promise.all([
-    golfRead<Course[]>("golf_courses", {}, [], 300),
+    golfRead<Course[]>("golf_courses", { p_pin: pin }, [], 300),
     getSettings(),
-    getRoster(),
+    getRoster(pin),
   ]);
   return (
     <div className={styles.wrap}>
@@ -20,7 +22,7 @@ export default async function WolfPage() {
           This game is turned off right now. You can still finish and post a card you already started.
         </p>
       )}
-      <WolfScorecard courses={courses} settings={settings} roster={roster} />
+      <WolfScorecard courses={courses} settings={settings} roster={roster} pin={pin} />
     </div>
   );
 }

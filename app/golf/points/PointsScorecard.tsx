@@ -66,10 +66,12 @@ export default function PointsScorecard({
   courses,
   settings,
   roster,
+  pin = "",
 }: {
   courses: Course[];
   settings: GolfSettings;
   roster: string[];
+  pin?: string;
 }) {
   const panelRules = settings.games.points.rules;
   const [draft, setDraft] = useState<Draft>(() => newDraft(courses[0]?.id ?? null));
@@ -429,6 +431,7 @@ export default function PointsScorecard({
           </div>
           <PostRound
             pinRequired={settings.pinRequired}
+            defaultPin={pin}
             draftKey={STORAGE_KEY}
             buildPayload={buildPayload}
             onBack={() => update({ phase: "play" })}
