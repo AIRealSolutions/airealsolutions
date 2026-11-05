@@ -29,6 +29,7 @@ const DOT_FIELDS: [keyof DotRules, string][] = [
   ["closest", "Closest to the hole"],
 ];
 type Draft = {
+  scramble?: boolean; // captain's choice: one team score per hole
   bet?: RoundBet;
   rules?: Partial<DotRules>;
   phase: "setup" | "play" | "review";
@@ -93,6 +94,7 @@ export default function PointsScorecard({
 
   const course = courses.find((c) => c.id === draft.courseId) ?? null;
   const { players: names, teams } = draft;
+  const captains: Record<Team, number> = { black: teams.indexOf("black"), white: teams.indexOf("white") };
   const n = names.length;
   const holeInputs: PointsHoleInput[] = useMemo(
     () => draft.holes.map((h, i) => ({ ...h, par: course?.holes[i]?.par ?? 4, teams })),
@@ -248,6 +250,10 @@ export default function PointsScorecard({
               </button>
             </p>
           </div>
+          <label className={styles.checkRow}>
+            <input type="checkbox" checked={Boolean(draft.scramble)} onChange={(e) => update({ scramble: e.target.checked })} />
+            <span>Captain&apos;s choice (one team score per hole)</span>
+          </label>
           <details className={styles.rulesBox}>
             <summary>Dot values for this round</summary>
             {DOT_FIELDS.map(([key, label]) => (
@@ -330,7 +336,14 @@ export default function PointsScorecard({
             submittedBy: draft.submittedBy,
             settings: {
               format: "points",
-              rules: { ...rules, nassauFront: nassau.front, nassauBack: nassau.back, nassauTotal: nassau.total, betPerPoint: bet },
+              rules: {
+                ...rules,
+                nassauFront: nassau.front,
+                nassauBack: nassau.back,
+                nassauTotal: nassau.total,
+                betPerPoint: bet,
+                scramble: draft.scramble ? 1 : 0,
+              },
               betPerPoint: bet,
             },
             players: names,
@@ -340,7 +353,7 @@ export default function PointsScorecard({
               return {
                 number: course.holes[i].number,
                 par: course.holes[i].par,
-                strokes: h.strokes,
+                strokes: draft.scramble ? h.strokes.map((_, seat) => h.strokes[captains[teams[seat]]]) : h.strokes,
                 points: outcome.points,
                 extras: {
                   sandSaves: h.sandSaves.flatMap((on, seat) => (on ? [seat] : [])),
@@ -406,7 +419,7 @@ export default function PointsScorecard({
                       <TeamTag team={teams[i]} />
                     </td>
                     <td className={styles.num}>
-                      {completed.reduce((sum, { h }) => sum + (h.strokes[i] ?? 0), 0)}
+                      {completed.reduce((sum, { h }) => sum + (h.strokes[draft.scramble ? captains[teams[i]] : i] ?? 0), 0)}
                     </td>
                     {hasMoney && <td className={styles.num}>{money(dots.perPlayer[i])}</td>}
                   </tr>
@@ -436,6 +449,9 @@ export default function PointsScorecard({
     updateHole(i, { strokes: entry.strokes.map((s, j) => (j === seat ? next : s)) });
   };
   const yards = [hole.yardsWhite && `${hole.yardsWhite} white`, hole.yardsBlue && `${hole.yardsBlue} blue`].filter(Boolean).join(" · ");
+  // Captain's choice keeps the team score on the first player of each team.
+  const rowSeats = draft.scramble ? TEAMS.map((t) => captains[t]) : names.map((_, seat) => seat);
+  const rowName = (seat: number) => (draft.scramble ? TEAM_NAMES[teams[seat]] : names[seat]);
 
   return (
     <div className={styles.scorecard}>
@@ -452,20 +468,25 @@ export default function PointsScorecard({
         {!outcome && (
           <p className={styles.waiting} role="status">
             {teamsWaiting(holeInputs[i]).map((t) => TEAM_NAMES[t]).join(" and ")} still{" "}
-            {teamsWaiting(holeInputs[i]).length > 1 ? "need" : "needs"} a score. One score per team is enough; players who
-            picked up can stay blank. Tap + or − to enter one (the first tap sets par).
+            {teamsWaiting(holeInputs[i]).length > 1 ? "need" : "needs"} a score.{" "}
+            {draft.scramble
+              ? "Enter one team score per hole."
+              : "One score per team is enough; players who picked up can stay blank."}{" "}
+            Tap + or − to enter one (the first tap sets par).
           </p>
         )}
 
-        {names.map((name, seat) => {
+        {draft.scramble && <span className={styles.wolfBadge}>Captain&apos;s choice: one score per team</span>}
+        {rowSeats.map((seat) => {
+          const name = rowName(seat);
           const s = entry.strokes[seat];
           const label = s ? scoreLabel(hole.par, s) : null;
           return (
-            <div className={styles.strokeRow} key={name}>
+            <div className={styles.strokeRow} key={seat}>
               <div>
                 <strong>{name}</strong>
                 <small>
-                  <TeamTag team={teams[seat]} />
+                  {!draft.scramble && <TeamTag team={teams[seat]} />}
                   {label && <span className={styles.birdie}>{label}</span>}
                 </small>
                 <button
@@ -494,14 +515,14 @@ export default function PointsScorecard({
           Closest to the hole
         </p>
         <div className={styles.chips}>
-          {names.map((name, seat) => (
+          {rowSeats.map((seat) => (
             <button
               type="button"
-              key={name}
+              key={seat}
               className={`${styles.chip} ${entry.closest === seat ? styles.chipOn : ""}`}
               onClick={() => updateHole(i, { closest: entry.closest === seat ? null : seat })}
             >
-              {name}
+              {rowName(seat)}
             </button>
           ))}
         </div>
