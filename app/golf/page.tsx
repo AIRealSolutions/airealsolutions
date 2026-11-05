@@ -1,74 +1,93 @@
 import { formatDate, golfRead, type RecentRound } from "./lib/api";
 import { DEFAULT_RULES } from "./lib/wolf";
+import { POINTS_RULES } from "./lib/points";
 import styles from "./golf.module.css";
 
 export const metadata = {
   title: { absolute: "Golf Buddy | AI Real Solutions" },
-  description: "A free Wolf scorecard for our golf group: score on your phone, comment on every hole, and share the round.",
+  description: "Free scorecards for our golf group: Wolf and Black Belt vs White Belt Team Points. Comment on every hole and share the round.",
 };
 
 export default async function GolfHome() {
   const recent = await golfRead<RecentRound[]>("golf_recent_rounds", { p_limit: 8 }, []);
-  const r = DEFAULT_RULES;
+  const w = DEFAULT_RULES;
+  const t = POINTS_RULES;
 
   return (
     <div className={styles.wrap}>
       <section className={styles.hero}>
         <p className="eyebrow">Golf Buddy</p>
         <h1>
-          Play Wolf. <span>Keep score on your phone.</span>
+          Keep score on your phone. <span>Settle it on the leaderboard.</span>
         </h1>
         <p className={styles.lead}>
-          Anyone in the group can keep the card. Enter scores hole by hole, pick partners, leave a comment on the
-          shot everyone will be talking about, then share the round with the group.
+          Anyone in the group can keep the card. Enter scores hole by hole, leave a comment on the shot everyone
+          will be talking about, then share the round with the group.
         </p>
-        <div className={styles.actions}>
-          <a className={`button ${styles.greenButton}`} href="/golf/wolf">
-            Start a Wolf round
-          </a>
-          <a className="button button-secondary" href="/golf/leaderboard">
-            Season leaderboard
-          </a>
-        </div>
       </section>
 
-      <div className={styles.grid2}>
-        <section className={styles.card}>
-          <h2>Recent rounds</h2>
-          {recent.length ? (
-            <ul className={styles.list}>
-              {recent.map((round) => (
-                <li key={round.id}>
-                  <a href={`/golf/rounds/${round.id}`}>
-                    <strong>{round.winner ? `${round.winner} won` : "Round"}</strong> at {round.course}
-                    <small>
-                      {formatDate(round.playedOn)} · {round.players}
-                    </small>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className={styles.muted}>No rounds yet. Be the first to post one.</p>
-          )}
+      <div className={styles.gameCards} id="games">
+        <section className={`${styles.card} ${styles.gameCard}`}>
+          <p className="eyebrow">Team game · 2 to 8 players</p>
+          <h2>Team Points: Black Belt vs White Belt</h2>
+          <ul className={styles.rules}>
+            <li>Pick teams each round. Every player's record is kept.</li>
+            <li>Best ball on each hole: {t.bestBall} point to the team.</li>
+            <li>Birdie +{t.birdie}. Eagle or better +{t.birdie + t.eagleBonus}.</li>
+            <li>Sand save +{t.sandSave}. Closest to the hole +{t.closest}.</li>
+            <li>Most team points wins the round.</li>
+          </ul>
+          <div className={styles.actions}>
+            <a className={`button ${styles.greenButton}`} href="/golf/points">
+              Start Team Points
+            </a>
+          </div>
         </section>
 
-        <section className={styles.card}>
-          <h2>How Wolf works</h2>
+        <section className={`${styles.card} ${styles.gameCard}`}>
+          <p className="eyebrow">Rotating game · 3 to 5 players</p>
+          <h2>Wolf</h2>
           <ul className={styles.rules}>
-            <li>3 to 5 players. The Wolf rotates every hole in tee order.</li>
-            <li>After the tee shots, the Wolf picks a partner or goes Lone Wolf.</li>
-            <li>Each side plays its best ball. Lowest score wins the hole.</li>
+            <li>The Wolf rotates every hole and picks a partner or goes Lone Wolf.</li>
+            <li>Wolf and partner win: {w.teamWin} each. The other side wins: {w.opponentsWin} each.</li>
             <li>
-              Wolf and partner win: {r.teamWin} points each. The other side wins: {r.opponentsWin} points each.
+              Lone Wolf wins: {w.loneWin}. Lone Wolf loses: {w.loneLoss} to each opponent.
             </li>
-            <li>
-              Lone Wolf wins: {r.loneWin} points. Lone Wolf loses: {r.loneLoss} point to each opponent.
-            </li>
-            <li>Ties carry no points. Most points after the round wins.</li>
+            <li>Ties carry no points. Most points wins.</li>
           </ul>
+          <div className={styles.actions}>
+            <a className="button button-secondary" href="/golf/wolf">
+              Start Wolf
+            </a>
+          </div>
         </section>
       </div>
+
+      <section className={styles.card}>
+        <h2>Recent rounds</h2>
+        {recent.length ? (
+          <ul className={styles.list}>
+            {recent.map((round) => (
+              <li key={round.id}>
+                <a href={`/golf/rounds/${round.id}`}>
+                  <strong>{round.winner ? `${round.winner} won` : "Tied round"}</strong>{" "}
+                  {round.format === "points" ? "Team Points" : "Wolf"} at {round.course}
+                  <small>
+                    {formatDate(round.playedOn)} · {round.players}
+                  </small>
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className={styles.muted}>No rounds yet. Be the first to post one.</p>
+        )}
+        <p style={{ marginBottom: 0 }}>
+          <a className="text-link" href="/golf/leaderboard">
+            Season leaderboard →
+          </a>
+        </p>
+      </section>
     </div>
   );
 }

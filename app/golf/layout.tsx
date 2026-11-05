@@ -18,7 +18,7 @@ export default function GolfLayout({ children }: Readonly<{ children: React.Reac
         <nav aria-label="Golf Buddy navigation" className={styles.nav}>
           <a href="/golf">Golf Buddy</a>
           <a href="/golf/leaderboard">Leaderboard</a>
-          <a className="nav-cta" href="/golf/wolf">
+          <a className="nav-cta" href="/golf#games">
             Start a round
           </a>
         </nav>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { formatDate, golfRead, type SavedRound } from "../../lib/api";
+import { TEAM_NAMES, scoreLabel, type Team } from "../../lib/points";
 import ShareButton from "./ShareButton";
 import styles from "../../golf.module.css";
 
@@ -12,16 +13,36 @@ async function getRound(id: string) {
   return round?.players?.length && round.holes?.length ? round : null;
 }
 
-const standings = (round: SavedRound) =>
-  [...round.players].sort((a, b) => b.points - a.points || a.strokes - b.strokes);
+const standings = (round: SavedRound) => [...round.players].sort((a, b) => b.points - a.points || a.strokes - b.strokes);
+
+function winnerText(round: SavedRound) {
+  if (round.format === "points") {
+    const tp = round.teamPoints ?? { black: 0, white: 0 };
+    if (tp.black === tp.white) return { who: "Black Belt & White Belt", verb: "tie." };
+    return { who: TEAM_NAMES[tp.black > tp.white ? "black" : "white"], verb: "wins." };
+  }
+  const ranked = standings(round);
+  const top = ranked[0].points;
+  return { who: ranked.filter((p) => p.points === top).map((p) => p.name).join(" & "), verb: "wins." };
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const round = await getRound((await params).id);
   if (!round) return { title: "Round not found" };
-  const [leader] = standings(round);
-  const title = `${leader.name} wins Wolf at ${round.course.name}`;
-  const description = `${formatDate(round.playedOn)} · ${round.players.map((p) => `${p.name} ${p.points}`).join(", ")}. Scored with Golf Buddy by AI Real Solutions.`;
+  const game = round.format === "points" ? "Team Points" : "Wolf";
+  const { who, verb } = winnerText(round);
+  const title = `${who} ${verb === "tie." ? "tie" : "wins"} ${game} at ${round.course.name}`;
+  const score =
+    round.format === "points" && round.teamPoints
+      ? `Black Belt ${round.teamPoints.black}, White Belt ${round.teamPoints.white}`
+      : round.players.map((p) => `${p.name} ${p.points}`).join(", ");
+  const description = `${formatDate(round.playedOn)} · ${score}. Scored with Golf Buddy by AI Real Solutions.`;
   return { title, description, openGraph: { title, description, siteName: "Golf Buddy by AI Real Solutions" } };
+}
+
+function TeamTag({ team }: { team: Team | null }) {
+  if (!team) return null;
+  return <span className={`${styles.teamTag} ${team === "black" ? styles.teamBlack : styles.teamWhite}`}>{TEAM_NAMES[team]}</span>;
 }
 
 export default async function RoundPage({ params }: { params: Promise<{ id: string }> }) {
@@ -29,46 +50,71 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
   const round = await getRound(id);
   if (!round) notFound();
 
+  const isPoints = round.format === "points";
   const ranked = standings(round);
-  const top = ranked[0].points;
-  const name = (seat: number | null) => (seat === null ? "" : (round.players.find((p) => p.seat === seat)?.name ?? ""));
+  const { who, verb } = winnerText(round);
+  const name = (seat: number | null | undefined) =>
+    seat === null || seat === undefined ? "" : (round.players.find((p) => p.seat === seat)?.name ?? "");
+  const resultLabel = { win: "W", loss: "L", tie: "T" } as const;
 
   return (
     <div className={styles.wrap}>
       <section className={styles.hero}>
         <p className="eyebrow">
-          Wolf · {round.course.name} · {formatDate(round.playedOn)}
+          {isPoints ? "Team Points" : "Wolf"} · {round.course.name} · {formatDate(round.playedOn)}
         </p>
         <h1>
-          {ranked.filter((p) => p.points === top).map((p) => p.name).join(" & ")} <span>wins.</span>
+          {who} <span>{verb}</span>
         </h1>
         <div className={styles.actions}>
           <ShareButton />
-          <a className="button button-secondary" href="/golf/wolf">
+          <a className="button button-secondary" href={isPoints ? "/golf/points" : "/golf/wolf"}>
             Start a new round
           </a>
         </div>
       </section>
 
+      {isPoints && round.teamPoints && (
+        <div className={styles.teamScore} style={{ maxWidth: 520 }}>
+          {(["black", "white"] as Team[]).map((team) => (
+            <div key={team} className={team === "black" ? styles.teamBlack : styles.teamWhite}>
+              <small>{TEAM_NAMES[team]}</small>
+              <strong>{round.teamPoints![team]}</strong>
+            </div>
+          ))}
+        </div>
+      )}
+
       <section className={styles.card}>
-        <h2>Final standings</h2>
+        <h2>{isPoints ? "Players" : "Final standings"}</h2>
         <div className={styles.tableScroll}>
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>#</th>
+                {!isPoints && <th>#</th>}
                 <th>Player</th>
-                <th className={styles.num}>Points</th>
+                {isPoints && <th>Team</th>}
+                <th className={styles.num}>{isPoints ? "Bonus pts" : "Points"}</th>
                 <th className={styles.num}>Strokes</th>
+                {isPoints && <th className={styles.num}>Result</th>}
               </tr>
             </thead>
             <tbody>
-              {ranked.map((p, i) => (
-                <tr key={p.seat} className={p.points === top ? styles.winnerRow : undefined}>
-                  <td>{i + 1}</td>
+              {(isPoints ? round.players : ranked).map((p, i) => (
+                <tr
+                  key={p.seat}
+                  className={(isPoints ? p.result === "win" : p.points === ranked[0].points) ? styles.winnerRow : undefined}
+                >
+                  {!isPoints && <td>{i + 1}</td>}
                   <td>{p.name}</td>
+                  {isPoints && (
+                    <td>
+                      <TeamTag team={p.team} />
+                    </td>
+                  )}
                   <td className={styles.num}>{p.points}</td>
                   <td className={styles.num}>{p.strokes}</td>
+                  {isPoints && <td className={styles.num}>{p.result ? resultLabel[p.result] : ""}</td>}
                 </tr>
               ))}
             </tbody>
@@ -84,7 +130,7 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
             <thead>
               <tr>
                 <th>Hole</th>
-                <th>Wolf</th>
+                <th>{isPoints ? "Result" : "Wolf"}</th>
                 {round.players.map((p) => (
                   <th key={p.seat} className={styles.num}>
                     {p.name}
@@ -93,27 +139,53 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
               </tr>
             </thead>
             <tbody>
-              {round.holes.map((h) => (
-                <tr key={h.number}>
-                  <td>
-                    <strong>{h.number}</strong>
-                    <br />
-                    <small className={styles.muted}>Par {h.par}</small>
-                  </td>
-                  <td>
-                    🐺 {name(h.wolfSeat)}
-                    <br />
-                    <small className={styles.muted}>{h.loneWolf ? "Lone Wolf" : `w/ ${name(h.partnerSeat)}`}</small>
-                    {h.comment && <div className={styles.comment}>“{h.comment}”</div>}
-                  </td>
-                  {round.players.map((p) => (
-                    <td key={p.seat} className={styles.num}>
-                      {h.strokes[p.seat]}
-                      {h.points[p.seat] > 0 && <span className={styles.pts}>+{h.points[p.seat]}</span>}
+              {round.holes.map((h) => {
+                const ex = h.extras ?? {};
+                return (
+                  <tr key={h.number}>
+                    <td>
+                      <strong>{h.number}</strong>
+                      <br />
+                      <small className={styles.muted}>Par {h.par}</small>
                     </td>
-                  ))}
-                </tr>
-              ))}
+                    <td>
+                      {isPoints ? (
+                        <>
+                          {ex.bestBall ? `${TEAM_NAMES[ex.bestBall]} best ball` : "Best ball tied"}
+                          <br />
+                          <small className={styles.muted}>
+                            B {ex.teamPoints?.black ?? 0} · W {ex.teamPoints?.white ?? 0}
+                            {ex.closest !== null && ex.closest !== undefined ? ` · Closest: ${name(ex.closest)}` : ""}
+                          </small>
+                        </>
+                      ) : (
+                        <>
+                          🐺 {name(h.wolfSeat)}
+                          <br />
+                          <small className={styles.muted}>{h.loneWolf ? "Lone Wolf" : `w/ ${name(h.partnerSeat)}`}</small>
+                        </>
+                      )}
+                      {h.comment && <div className={styles.comment}>“{h.comment}”</div>}
+                    </td>
+                    {round.players.map((p) => {
+                      const s = h.strokes[p.seat];
+                      const label = isPoints ? scoreLabel(h.par, s) : null;
+                      const sand = isPoints && ex.sandSaves?.includes(p.seat);
+                      return (
+                        <td key={p.seat} className={styles.num}>
+                          {s}
+                          {h.points[p.seat] > 0 && <span className={styles.pts}>+{h.points[p.seat]}</span>}
+                          {(label || sand) && (
+                            <small className={styles.muted} style={{ display: "block" }}>
+                              {[label, sand && "Sand"].filter(Boolean).join(" · ")}
+                            </small>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

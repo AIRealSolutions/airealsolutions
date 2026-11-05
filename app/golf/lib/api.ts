@@ -18,23 +18,27 @@ export type Course = { id: number; name: string; city: string | null; state: str
 export type SavedHole = {
   number: number;
   par: number;
-  wolfSeat: number;
+  wolfSeat: number | null;
   partnerSeat: number | null;
   loneWolf: boolean;
   strokes: number[];
   points: number[];
   comment: string | null;
+  extras?: { sandSaves?: number[]; closest?: number | null; bestBall?: "black" | "white" | null; teamPoints?: { black: number; white: number } };
 };
 export type SavedRound = {
   id: string;
+  format: "wolf" | "points";
+  teamPoints: { black: number; white: number } | null;
   playedOn: string;
   submittedBy: string | null;
   course: { id: number; name: string; city: string | null; state: string | null };
-  players: { seat: number; name: string; points: number; strokes: number }[];
+  players: { seat: number; name: string; team: "black" | "white" | null; result: "win" | "loss" | "tie" | null; points: number; strokes: number }[];
   holes: SavedHole[];
 };
-export type RecentRound = { id: string; playedOn: string; course: string; winner: string | null; players: string };
-export type LeaderRow = { name: string; rounds: number; points: number; wins: number; avgStrokes: number };
+export type RecentRound = { id: string; format: "wolf" | "points"; playedOn: string; course: string; winner: string | null; players: string };
+export type LeaderRow = { name: string; rounds: number; points: number; wins: number; losses: number; ties: number; avgStrokes: number };
+export type TeamRecord = { rounds: number; blackWins: number; whiteWins: number; ties: number; blackPoints: number; whitePoints: number };
 
 export async function golfRpc<T>(fn: string, args: Record<string, unknown> = {}, revalidate?: number): Promise<T> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
