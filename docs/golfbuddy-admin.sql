@@ -153,10 +153,13 @@ begin
       raise exception 'Hole % has the wrong number of scores', h->>'number';
     end if;
     for i in 0..n-1 loop
+      -- A blank score is allowed (player picked up): a side only needs one score for best ball.
       v := (h->'strokes'->>i)::int;
-      if v < 1 or v > 15 then raise exception 'Hole % has an invalid score', h->>'number'; end if;
-      strk[i+1] := strk[i+1] + v;
-      v := (h->'points'->>i)::int;
+      if v is not null then
+        if v < 1 or v > 15 then raise exception 'Hole % has an invalid score', h->>'number'; end if;
+        strk[i+1] := strk[i+1] + v;
+      end if;
+      v := coalesce((h->'points'->>i)::int, 0);
       if v < 0 or v > 60 then raise exception 'Hole % has invalid points', h->>'number'; end if;
       pts[i+1] := pts[i+1] + v;
     end loop;

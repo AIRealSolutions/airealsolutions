@@ -21,7 +21,7 @@ export type SavedHole = {
   wolfSeat: number | null;
   partnerSeat: number | null;
   loneWolf: boolean;
-  strokes: number[];
+  strokes: (number | null)[];
   points: number[];
   comment: string | null;
   extras?: { sandSaves?: number[]; closest?: number | null; bestBall?: "black" | "white" | null; teamPoints?: { black: number; white: number } };

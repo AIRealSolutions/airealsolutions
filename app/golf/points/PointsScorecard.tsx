@@ -9,6 +9,7 @@ import {
   TEAM_NAMES,
   TEAMS,
   isPointsHoleComplete,
+  teamsWaiting,
   pointsTotals,
   scoreLabel,
   scorePointsHole,
@@ -405,7 +406,7 @@ export default function PointsScorecard({
                       <TeamTag team={teams[i]} />
                     </td>
                     <td className={styles.num}>
-                      {completed.reduce((sum, { h }) => sum + (h.strokes[i] as number), 0)}
+                      {completed.reduce((sum, { h }) => sum + (h.strokes[i] ?? 0), 0)}
                     </td>
                     {hasMoney && <td className={styles.num}>{money(dots.perPlayer[i])}</td>}
                   </tr>
@@ -450,8 +451,9 @@ export default function PointsScorecard({
         {yards && <p className={styles.holeMeta}>{yards}</p>}
         {!outcome && (
           <p className={styles.waiting} role="status">
-            Waiting for scores: {names.filter((_, seat) => entry.strokes[seat] === null).join(", ")}. The dots count once
-            everyone on this hole has a score. Tap + or − to enter one (the first tap sets par).
+            {teamsWaiting(holeInputs[i]).map((t) => TEAM_NAMES[t]).join(" and ")} still{" "}
+            {teamsWaiting(holeInputs[i]).length > 1 ? "need" : "needs"} a score. One score per team is enough; players who
+            picked up can stay blank. Tap + or − to enter one (the first tap sets par).
           </p>
         )}
 

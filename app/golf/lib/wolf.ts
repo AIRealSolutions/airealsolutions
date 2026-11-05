@@ -22,17 +22,29 @@ export type HoleInput = {
 
 export type HoleOutcome = { points: number[]; winner: "wolf" | "opponents" | "push" };
 
+const hasScore = (s: number | null | undefined): s is number => typeof s === "number" && s > 0;
+
+export const sides = (hole: HoleInput) => {
+  const wolfSide = hole.loneWolf ? [hole.wolfSeat] : hole.partnerSeat === null ? [hole.wolfSeat] : [hole.wolfSeat, hole.partnerSeat];
+  const others = hole.strokes.map((_, seat) => seat).filter((seat) => !wolfSide.includes(seat));
+  return { wolfSide, others };
+};
+
+/** Counts once the partner is picked and each side has at least one score (others can pick up). */
 export function isHoleComplete(hole: HoleInput) {
-  return hole.strokes.every((s) => typeof s === "number" && s > 0) && (hole.loneWolf || hole.partnerSeat !== null);
+  if (!(hole.loneWolf || hole.partnerSeat !== null)) return false;
+  const { wolfSide, others } = sides(hole);
+  return wolfSide.some((s) => hasScore(hole.strokes[s])) && others.some((s) => hasScore(hole.strokes[s]));
 }
 
 export function scoreHole(hole: HoleInput, rules: WolfRules = DEFAULT_RULES): HoleOutcome | null {
   if (!isHoleComplete(hole)) return null;
-  const strokes = hole.strokes as number[];
+  const strokes = hole.strokes;
   const wolfSide = hole.loneWolf ? [hole.wolfSeat] : [hole.wolfSeat, hole.partnerSeat as number];
   const others = strokes.map((_, seat) => seat).filter((seat) => !wolfSide.includes(seat));
-  const wolfBest = Math.min(...wolfSide.map((s) => strokes[s]));
-  const otherBest = Math.min(...others.map((s) => strokes[s]));
+  const best = (seats: number[]) => Math.min(...seats.map((s) => strokes[s]).filter(hasScore));
+  const wolfBest = best(wolfSide);
+  const otherBest = best(others);
   const points = strokes.map(() => 0);
 
   if (wolfBest === otherBest) return { points, winner: "push" };
@@ -52,7 +64,7 @@ export function totals(holes: HoleInput[], playerCount: number, rules: WolfRules
     const outcome = scoreHole(hole, rules);
     if (!outcome) return;
     outcome.points.forEach((p, i) => (points[i] += p));
-    (hole.strokes as number[]).forEach((s, i) => (strokes[i] += s));
+    hole.strokes.forEach((s, i) => (strokes[i] += s ?? 0));
   });
   return { points, strokes };
 }
