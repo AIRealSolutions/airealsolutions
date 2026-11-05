@@ -334,6 +334,19 @@ export default function WolfScorecard({
           </span>
         </div>
         {yards && <p className={styles.holeMeta}>{yards}</p>}
+        {!outcome && (
+          <p className={styles.waiting} role="status">
+            {[
+              !entry.loneWolf && entry.partnerSeat === null ? `${names[wolf]} still needs to pick a partner or go Lone Wolf` : "",
+              entry.strokes.some((s) => s === null)
+                ? `Waiting for scores: ${names.filter((_, seat) => entry.strokes[seat] === null).join(", ")}`
+                : "",
+            ]
+              .filter(Boolean)
+              .join(". ")}
+            . Points count once that's done. Tap + or − to enter a score (the first tap sets par).
+          </p>
+        )}
         <span className={styles.wolfBadge}>🐺 {names[wolf]} is the Wolf</span>
 
         <p className={styles.holeMeta}>After the tee shots, {names[wolf]} picks:</p>
