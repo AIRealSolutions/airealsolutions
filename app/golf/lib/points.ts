@@ -34,10 +34,17 @@ export type PointsHoleOutcome = {
   teamPoints: Record<Team, number>;
 };
 
-export const isPointsHoleComplete = (hole: PointsHoleInput) =>
-  hole.strokes.every((s) => typeof s === "number" && s > 0);
+const hasScore = (s: number | null | undefined): s is number => typeof s === "number" && s > 0;
 
-export function scoreLabel(par: number, strokes: number) {
+/** Teams that still need a score on this hole (best ball needs one score per team). */
+export const teamsWaiting = (hole: PointsHoleInput) =>
+  TEAMS.filter((team) => !hole.strokes.some((s, seat) => hole.teams[seat] === team && hasScore(s)));
+
+/** A hole counts once each team has at least one score; players who picked up can stay blank. */
+export const isPointsHoleComplete = (hole: PointsHoleInput) => teamsWaiting(hole).length === 0;
+
+export function scoreLabel(par: number, strokes: number | null | undefined) {
+  if (!hasScore(strokes)) return null;
   const diff = strokes - par;
   if (strokes === 1) return "Ace";
   if (diff <= -3) return "Albatross";
@@ -48,15 +55,15 @@ export function scoreLabel(par: number, strokes: number) {
 
 export function scorePointsHole(hole: PointsHoleInput, rules = POINTS_RULES): PointsHoleOutcome | null {
   if (!isPointsHoleComplete(hole)) return null;
-  const strokes = hole.strokes as number[];
+  const strokes = hole.strokes;
   const points = strokes.map(() => 0);
   const bonuses: string[][] = strokes.map(() => []);
 
   strokes.forEach((s, seat) => {
-    const diff = s - hole.par;
+    const diff = hasScore(s) ? s - hole.par : 0;
     if (diff <= -1) {
       points[seat] += rules.birdie;
-      bonuses[seat].push(diff <= -2 ? scoreLabel(hole.par, s)! : "Birdie");
+      bonuses[seat].push(diff <= -2 ? (scoreLabel(hole.par, s) ?? "Eagle") : "Birdie");
     }
     if (diff <= -2) points[seat] += rules.eagleBonus;
     if (hole.sandSaves[seat]) {
@@ -69,7 +76,7 @@ export function scorePointsHole(hole: PointsHoleInput, rules = POINTS_RULES): Po
     }
   });
 
-  const best = (team: Team) => Math.min(...strokes.filter((_, seat) => hole.teams[seat] === team));
+  const best = (team: Team) => Math.min(...strokes.filter((s, seat) => hole.teams[seat] === team && hasScore(s)).map(Number));
   const black = best("black");
   const white = best("white");
   const bestBall: Team | null = black < white ? "black" : white < black ? "white" : null;

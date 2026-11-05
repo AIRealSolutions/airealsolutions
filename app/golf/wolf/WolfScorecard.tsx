@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Course, GolfSettings } from "../lib/api";
-import { isHoleComplete, scoreHole, totals, wolfSeatFor, type HoleInput } from "../lib/wolf";
+import { isHoleComplete, scoreHole, sides, totals, wolfSeatFor, type HoleInput } from "../lib/wolf";
 import { money, settleWolf } from "../lib/settle";
 import PostRound, { RosterList } from "../PostRound";
 import styles from "../golf.module.css";
@@ -338,13 +338,19 @@ export default function WolfScorecard({
           <p className={styles.waiting} role="status">
             {[
               !entry.loneWolf && entry.partnerSeat === null ? `${names[wolf]} still needs to pick a partner or go Lone Wolf` : "",
-              entry.strokes.some((s) => s === null)
-                ? `Waiting for scores: ${names.filter((_, seat) => entry.strokes[seat] === null).join(", ")}`
-                : "",
+              ...(() => {
+                const { wolfSide, others } = sides(input);
+                const scored = (seats: number[]) => seats.some((seat) => (entry.strokes[seat] ?? 0) > 0);
+                return [
+                  scored(wolfSide) ? "" : `${names[wolf]}'s side needs a score`,
+                  scored(others) ? "" : "The other side needs a score",
+                ];
+              })(),
             ]
               .filter(Boolean)
               .join(". ")}
-            . Points count once that's done. Tap + or − to enter a score (the first tap sets par).
+            . One score per side is enough; players who picked up can stay blank. Tap + or − to enter a score (the
+            first tap sets par).
           </p>
         )}
         <span className={styles.wolfBadge}>🐺 {names[wolf]} is the Wolf</span>
