@@ -3,7 +3,7 @@ import styles from "./golf.module.css";
 
 export const metadata = {
   title: { absolute: "Golf Buddy | AI Real Solutions" },
-  description: "Free scorecards for our golf group: Wolf and Black Belt vs White Belt Team Points. Comment on every hole and share the round.",
+  description: "Free scorecards for our golf group: Dots (Black Belt vs White Belt) and Wolf. Comment on every hole and share the round.",
 };
 
 export default async function GolfHome() {
@@ -32,18 +32,23 @@ export default async function GolfHome() {
         {settings.games.points.enabled && (
         <section className={`${styles.card} ${styles.gameCard}`} style={{ order: settings.defaultGame === "points" ? 0 : 1 }}>
           <p className="eyebrow">Team game · 2 to 8 players</p>
-          <h2>Team Points: Black Belt vs White Belt</h2>
+          <h2>Dots: Black Belt vs White Belt</h2>
           <ul className={styles.rules}>
             <li>Pick teams each round. Every player's record is kept.</li>
-            <li>Best ball on each hole: {t.bestBall} point to the team.</li>
-            <li>Birdie +{t.birdie}. Eagle or better +{t.birdie + t.eagleBonus}.</li>
-            <li>Sand save +{t.sandSave}. Closest to the hole +{t.closest}.</li>
-            <li>Most team points wins the round.</li>
-            {bet > 0 && <li>Losing team pays ${bet} per point of difference, each.</li>}
+            <li>Every dot counts for the team.</li>
+            <li>Best ball on each hole: {t.bestBall} dot.</li>
+            <li>Birdie {t.birdie}. Eagle or better {t.birdie + t.eagleBonus}.</li>
+            <li>Sand save {t.sandSave}. Closest to the hole {t.closest}.</li>
+            {(t.nassauFront > 0 || t.nassauBack > 0 || t.nassauTotal > 0) && (
+              <li>
+                Bet: ${t.nassauFront} front / ${t.nassauBack} back / ${t.nassauTotal} total, per player.
+              </li>
+            )}
+            {bet > 0 && <li>Plus ${bet} per dot of difference, per player.</li>}
           </ul>
           <div className={styles.actions}>
             <a className={`button ${styles.greenButton}`} href="/golf/points">
-              Start Team Points
+              Start Dots
             </a>
           </div>
         </section>
@@ -79,7 +84,7 @@ export default async function GolfHome() {
               <li key={round.id}>
                 <a href={`/golf/rounds/${round.id}`}>
                   <strong>{round.winner ? `${round.winner} won` : "Tied round"}</strong>{" "}
-                  {round.format === "points" ? "Team Points" : "Wolf"} at {round.course}
+                  {round.format === "points" ? "Dots" : "Wolf"} at {round.course}
                   <small>
                     {formatDate(round.playedOn)} · {round.players}
                   </small>

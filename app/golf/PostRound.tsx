@@ -80,7 +80,7 @@ export default function PostRound({ pinRequired, draftKey, buildPayload, onBack 
 export function RosterList({ names }: { names: string[] }) {
   return (
     <datalist id="golf-roster">
-      {names.map((n) => (
+      {[...new Set(names)].map((n) => (
         <option key={n} value={n} />
       ))}
     </datalist>

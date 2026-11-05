@@ -29,7 +29,7 @@ export type SavedHole = {
 export type SavedRound = {
   id: string;
   format: "wolf" | "points";
-  settings?: { betPerPoint?: number | string } | null;
+  settings?: { betPerPoint?: number | string; rules?: Record<string, number> } | null;
   teamPoints: { black: number; white: number } | null;
   playedOn: string;
   submittedBy: string | null;
@@ -73,7 +73,17 @@ export const formatDate = (iso: string) =>
   new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 /* ---------- Settings (bet price, games, rule values) ---------- */
-export type PointsRulesSetting = { bestBall: number; birdie: number; eagleBonus: number; sandSave: number; closest: number };
+// nassauFront/Back/Total are the Dots front/back/total bet in dollars (stored with the rules so each round keeps them).
+export type PointsRulesSetting = {
+  bestBall: number;
+  birdie: number;
+  eagleBonus: number;
+  sandSave: number;
+  closest: number;
+  nassauFront: number;
+  nassauBack: number;
+  nassauTotal: number;
+};
 export type WolfRulesSetting = { teamWin: number; opponentsWin: number; loneWin: number; loneLoss: number };
 export type GolfSettings = {
   betPerPoint: number;
@@ -89,7 +99,10 @@ export const DEFAULT_SETTINGS: GolfSettings = {
   defaultGame: "points",
   pinRequired: false,
   games: {
-    points: { enabled: true, rules: { bestBall: 1, birdie: 1, eagleBonus: 1, sandSave: 1, closest: 1 } },
+    points: {
+      enabled: true,
+      rules: { bestBall: 1, birdie: 1, eagleBonus: 1, sandSave: 1, closest: 1, nassauFront: 0, nassauBack: 0, nassauTotal: 0 },
+    },
     wolf: { enabled: true, rules: { teamWin: 2, opponentsWin: 3, loneWin: 4, loneLoss: 1 } },
   },
 };
