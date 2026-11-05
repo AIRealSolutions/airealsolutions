@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { formatDate, golfRead, type SavedRound } from "../../lib/api";
-import { TEAM_NAMES, scoreLabel, type Team } from "../../lib/points";
-import { money, settleTeams, settleWolf } from "../../lib/settle";
+import { TEAM_NAMES, nassauOf, scoreLabel, type Team } from "../../lib/points";
+import { money, settleDots, settleWolf } from "../../lib/settle";
 import ShareButton from "./ShareButton";
 import styles from "../../golf.module.css";
 
@@ -30,12 +30,12 @@ function winnerText(round: SavedRound) {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const round = await getRound((await params).id);
   if (!round) return { title: "Round not found" };
-  const game = round.format === "points" ? "Team Points" : "Wolf";
+  const game = round.format === "points" ? "Dots" : "Wolf";
   const { who, verb } = winnerText(round);
   const title = `${who} ${verb === "tie." ? "tie" : "wins"} ${game} at ${round.course.name}`;
   const score =
     round.format === "points" && round.teamPoints
-      ? `Black Belt ${round.teamPoints.black}, White Belt ${round.teamPoints.white}`
+      ? `Black Belt ${round.teamPoints.black} dots, White Belt ${round.teamPoints.white} dots`
       : round.players.map((p) => `${p.name} ${p.points}`).join(", ");
   const description = `${formatDate(round.playedOn)} · ${score}. Scored with Golf Buddy by AI Real Solutions.`;
   return { title, description, openGraph: { title, description, siteName: "Golf Buddy by AI Real Solutions" } };
@@ -58,13 +58,20 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
     seat === null || seat === undefined ? "" : (round.players.find((p) => p.seat === seat)?.name ?? "");
   const resultLabel = { win: "W", loss: "L", tie: "T" } as const;
   const bet = Number(round.settings?.betPerPoint ?? 0);
+  const nassau = nassauOf(round.settings?.rules);
+  const bySeat = [...round.players].sort((a, b) => a.seat - b.seat);
+  const dots = isPoints
+    ? settleDots(
+        bySeat.map((p) => p.team ?? "black"),
+        round.holes.map((h) => ({ number: h.number, teamPoints: h.extras?.teamPoints ?? { black: 0, white: 0 } })),
+        nassau,
+        bet,
+      )
+    : null;
+  const hasMoney = isPoints ? bet > 0 || nassau.front > 0 || nassau.back > 0 || nassau.total > 0 : bet > 0;
   const payoutBySeat = new Map<number, number>();
-  if (bet > 0) {
-    const bySeat = [...round.players].sort((a, b) => a.seat - b.seat);
-    const amounts =
-      isPoints && round.teamPoints
-        ? settleTeams(bySeat.map((p) => p.team ?? "black"), round.teamPoints, bet)
-        : settleWolf(bySeat.map((p) => p.points), bet);
+  if (hasMoney) {
+    const amounts = dots ? dots.perPlayer : settleWolf(bySeat.map((p) => p.points), bet);
     bySeat.forEach((p, i) => payoutBySeat.set(p.seat, amounts[i]));
   }
 
@@ -72,7 +79,7 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
     <div className={styles.wrap}>
       <section className={styles.hero}>
         <p className="eyebrow">
-          {isPoints ? "Team Points" : "Wolf"} · {round.course.name} · {formatDate(round.playedOn)}
+          {isPoints ? "Dots" : "Wolf"} · {round.course.name} · {formatDate(round.playedOn)}
         </p>
         <h1>
           {who} <span>{verb}</span>
@@ -89,11 +96,43 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
         <div className={styles.teamScore} style={{ maxWidth: 520 }}>
           {(["black", "white"] as Team[]).map((team) => (
             <div key={team} className={team === "black" ? styles.teamBlack : styles.teamWhite}>
-              <small>{TEAM_NAMES[team]}</small>
+              <small>{TEAM_NAMES[team]} dots</small>
               <strong>{round.teamPoints![team]}</strong>
             </div>
           ))}
         </div>
+      )}
+
+      {dots && (
+        <section className={styles.card}>
+          <h2>Front, back and total</h2>
+          <div className={styles.tableScroll}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th className={styles.num}>Black</th>
+                  <th className={styles.num}>White</th>
+                  <th>Winner</th>
+                  {hasMoney && <th className={styles.num}>Bet</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {dots.segments.map((seg) => (
+                  <tr key={seg.key}>
+                    <td>
+                      <strong>{seg.label}</strong>
+                    </td>
+                    <td className={styles.num}>{seg.black}</td>
+                    <td className={styles.num}>{seg.white}</td>
+                    <td>{seg.winner ? <TeamTag team={seg.winner} /> : "Push"}</td>
+                    {hasMoney && <td className={styles.num}>{seg.amount ? `$${seg.amount}` : ""}</td>}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       )}
 
       <section className={styles.card}>
@@ -105,10 +144,10 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
                 {!isPoints && <th>#</th>}
                 <th>Player</th>
                 {isPoints && <th>Team</th>}
-                <th className={styles.num}>{isPoints ? "Bonus pts" : "Points"}</th>
+                {!isPoints && <th className={styles.num}>Points</th>}
                 <th className={styles.num}>Strokes</th>
                 {isPoints && <th className={styles.num}>Result</th>}
-                {bet > 0 && <th className={styles.num}>${bet}/pt</th>}
+                {hasMoney && <th className={styles.num}>{isPoints ? "Owes / wins" : `$${bet}/pt`}</th>}
               </tr>
             </thead>
             <tbody>
@@ -124,10 +163,10 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
                       <TeamTag team={p.team} />
                     </td>
                   )}
-                  <td className={styles.num}>{p.points}</td>
+                  {!isPoints && <td className={styles.num}>{p.points}</td>}
                   <td className={styles.num}>{p.strokes}</td>
                   {isPoints && <td className={styles.num}>{p.result ? resultLabel[p.result] : ""}</td>}
-                  {bet > 0 && <td className={styles.num}>{money(payoutBySeat.get(p.seat) ?? 0)}</td>}
+                  {hasMoney && <td className={styles.num}>{money(payoutBySeat.get(p.seat) ?? 0)}</td>}
                 </tr>
               ))}
             </tbody>
@@ -167,8 +206,7 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
                           {ex.bestBall ? `${TEAM_NAMES[ex.bestBall]} best ball` : "Best ball tied"}
                           <br />
                           <small className={styles.muted}>
-                            B {ex.teamPoints?.black ?? 0} · W {ex.teamPoints?.white ?? 0}
-                            {ex.closest !== null && ex.closest !== undefined ? ` · Closest: ${name(ex.closest)}` : ""}
+                            Dots: B {ex.teamPoints?.black ?? 0} · W {ex.teamPoints?.white ?? 0}
                           </small>
                         </>
                       ) : (
@@ -184,13 +222,14 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
                       const s = h.strokes[p.seat];
                       const label = isPoints ? scoreLabel(h.par, s) : null;
                       const sand = isPoints && ex.sandSaves?.includes(p.seat);
+                      const closest = isPoints && ex.closest === p.seat;
                       return (
                         <td key={p.seat} className={styles.num}>
                           {s}
-                          {h.points[p.seat] > 0 && <span className={styles.pts}>+{h.points[p.seat]}</span>}
-                          {(label || sand) && (
+                          {!isPoints && h.points[p.seat] > 0 && <span className={styles.pts}>+{h.points[p.seat]}</span>}
+                          {(label || sand || closest) && (
                             <small className={styles.muted} style={{ display: "block" }}>
-                              {[label, sand && "Sand"].filter(Boolean).join(" · ")}
+                              {[label, sand && "Sand", closest && "Closest"].filter(Boolean).join(" · ")}
                             </small>
                           )}
                         </td>

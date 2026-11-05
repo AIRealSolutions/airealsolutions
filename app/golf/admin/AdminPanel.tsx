@@ -27,6 +27,9 @@ const PIN_KEY = "golfbuddy.admin.pin";
 const emptyForm: PlayerForm = { name: "", email: "", phone: "", handicap: "", tags: "", notes: "", isActive: true };
 
 const POINT_FIELDS: [keyof GolfSettings["games"]["points"]["rules"], string][] = [
+  ["nassauFront", "Bet: front 9 ($ per player)"],
+  ["nassauBack", "Bet: back 9 ($ per player)"],
+  ["nassauTotal", "Bet: total ($ per player)"],
   ["bestBall", "Best ball (team, per hole)"],
   ["birdie", "Birdie"],
   ["eagleBonus", "Extra for eagle or better"],
@@ -244,7 +247,7 @@ export default function AdminPanel() {
           <section className={styles.card}>
             <h2>Bet price</h2>
             <label className={styles.field}>
-              <span>Dollars per point</span>
+              <span>Dollars per point (Wolf; optional per-dot bet for Dots)</span>
               <input
                 className={styles.input}
                 type="number"
@@ -259,7 +262,7 @@ export default function AdminPanel() {
             <p className={styles.muted}>
               Set to 0 for no money. Each round keeps the price it was played at.
               <br />
-              Team Points: each loser pays the point difference × price; winners split it.
+              Dots: set the front / back / total bet in the Dots box. A per-dot price here is added on top.
               <br />
               Wolf: every pair of players settles their point difference × price.
             </p>
@@ -270,7 +273,7 @@ export default function AdminPanel() {
                 value={settings.defaultGame}
                 onChange={(e) => setSettings({ ...settings, defaultGame: e.target.value as "points" | "wolf" })}
               >
-                <option value="points">Team Points</option>
+                <option value="points">Dots</option>
                 <option value="wolf">Wolf</option>
               </select>
             </label>
@@ -278,7 +281,7 @@ export default function AdminPanel() {
 
           {(["points", "wolf"] as const).map((game) => (
             <section className={styles.card} key={game}>
-              <h2>{game === "points" ? "Team Points" : "Wolf"}</h2>
+              <h2>{game === "points" ? "Dots" : "Wolf"}</h2>
               <label className={styles.checkRow}>
                 <input
                   type="checkbox"
@@ -493,7 +496,7 @@ export default function AdminPanel() {
               {data.rounds.map((r) => (
                 <li key={r.id} className={styles.roundRow}>
                   <a href={`/golf/rounds/${r.id}`} target="_blank" rel="noreferrer">
-                    <strong>{r.format === "points" ? "Team Points" : "Wolf"}</strong> · {r.course}
+                    <strong>{r.format === "points" ? "Dots" : "Wolf"}</strong> · {r.course}
                     <small>
                       {formatDate(r.playedOn)} · {r.players}
                       {r.submittedBy ? ` · kept by ${r.submittedBy}` : ""}

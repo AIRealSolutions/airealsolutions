@@ -3,7 +3,7 @@ import PointsScorecard from "./PointsScorecard";
 import styles from "../golf.module.css";
 
 export const metadata = {
-  title: "Team Points scorecard",
+  title: "Dots scorecard",
   description: "Black Belt vs White Belt: best ball, birdies, sand saves and closest to the hole.",
 };
 

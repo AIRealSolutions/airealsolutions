@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Course, GolfSettings } from "../lib/api";
-import { money, settleTeams } from "../lib/settle";
+import { money, settleDots } from "../lib/settle";
 import PostRound, { RosterList } from "../PostRound";
 import {
+  nassauOf,
   TEAM_NAMES,
   TEAMS,
   isPointsHoleComplete,
@@ -100,15 +101,34 @@ export default function PointsScorecard({
     );
   }
 
+  const nassau = nassauOf(rules);
+  const hasMoney = bet > 0 || nassau.front > 0 || nassau.back > 0 || nassau.total > 0;
+  const scoredHoles = holeInputs.flatMap((h, idx) => {
+    const o = scorePointsHole(h, rules);
+    return o ? [{ number: course?.holes[idx]?.number ?? idx + 1, teamPoints: o.teamPoints }] : [];
+  });
+  const dots = settleDots(teams, scoredHoles, nassau, bet);
+  const segmentLine = dots.segments
+    .filter((seg) => seg.key !== "total")
+    .map((seg) => `${seg.label} ${seg.black}–${seg.white}`)
+    .join(" · ");
+
   const teamScore = (
-    <div className={styles.teamScore} aria-live="polite">
-      {TEAMS.map((team) => (
-        <div key={team} className={team === "black" ? styles.teamBlack : styles.teamWhite}>
-          <small>{TEAM_NAMES[team]}</small>
-          <strong>{running.team[team]}</strong>
-        </div>
-      ))}
-    </div>
+    <>
+      <div className={styles.teamScore} aria-live="polite">
+        {TEAMS.map((team) => (
+          <div key={team} className={team === "black" ? styles.teamBlack : styles.teamWhite}>
+            <small>{TEAM_NAMES[team]} dots</small>
+            <strong>{running.team[team]}</strong>
+          </div>
+        ))}
+      </div>
+      {segmentLine && (
+        <p className={styles.holeMeta} style={{ marginTop: -6 }}>
+          {segmentLine}
+        </p>
+      )}
+    </>
   );
 
   /* ---------- Setup ---------- */
@@ -142,7 +162,7 @@ export default function PointsScorecard({
     return (
       <div className={styles.scorecard}>
         <section className={styles.card}>
-          <p className="eyebrow">New Team Points round</p>
+          <p className="eyebrow">New Dots round</p>
           <h2>Pick the teams</h2>
           {error && <p className={styles.error}>{error}</p>}
           <label className={styles.field}>
@@ -235,7 +255,6 @@ export default function PointsScorecard({
   /* ---------- Review & submit ---------- */
   if (draft.phase === "review") {
     const completed = holeInputs.map((h, i) => ({ h, i })).filter(({ h }) => isPointsHoleComplete(h));
-    const payouts = settleTeams(teams, running.team, bet);
     const buildPayload = () =>
       completed.length
         ? {
@@ -277,11 +296,36 @@ export default function PointsScorecard({
             <table className={styles.table}>
               <thead>
                 <tr>
+                  <th></th>
+                  <th className={styles.num}>Black</th>
+                  <th className={styles.num}>White</th>
+                  <th>Winner</th>
+                  {hasMoney && <th className={styles.num}>Bet</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {dots.segments.map((seg) => (
+                  <tr key={seg.key}>
+                    <td>
+                      <strong>{seg.label}</strong>
+                    </td>
+                    <td className={styles.num}>{seg.black}</td>
+                    <td className={styles.num}>{seg.white}</td>
+                    <td>{seg.winner ? <TeamTag team={seg.winner} /> : "Push"}</td>
+                    {hasMoney && <td className={styles.num}>{seg.amount ? `$${seg.amount}` : ""}</td>}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className={styles.tableScroll} style={{ marginTop: 12 }}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
                   <th>Player</th>
                   <th>Team</th>
                   <th className={styles.num}>Strokes</th>
-                  <th className={styles.num}>Bonus pts</th>
-                  {bet > 0 && <th className={styles.num}>${bet}/pt</th>}
+                  {hasMoney && <th className={styles.num}>Owes / wins</th>}
                 </tr>
               </thead>
               <tbody>
@@ -294,8 +338,7 @@ export default function PointsScorecard({
                     <td className={styles.num}>
                       {completed.reduce((sum, { h }) => sum + (h.strokes[i] as number), 0)}
                     </td>
-                    <td className={styles.num}>{running.player[i]}</td>
-                    {bet > 0 && <td className={styles.num}>{money(payouts[i])}</td>}
+                    {hasMoney && <td className={styles.num}>{money(dots.perPlayer[i])}</td>}
                   </tr>
                 ))}
               </tbody>
@@ -343,10 +386,7 @@ export default function PointsScorecard({
           return (
             <div className={styles.strokeRow} key={name}>
               <div>
-                <strong>
-                  {name}
-                  {outcome && outcome.points[seat] > 0 && <span className={styles.pts}>+{outcome.points[seat]}</span>}
-                </strong>
+                <strong>{name}</strong>
                 <small>
                   <TeamTag team={teams[seat]} />
                   {label && <span className={styles.birdie}>{label}</span>}
@@ -402,7 +442,7 @@ export default function PointsScorecard({
 
         <p className={styles.holeMeta}>
           {outcome
-            ? `${outcome.bestBall ? `${TEAM_NAMES[outcome.bestBall]} wins best ball.` : "Best ball tied."} This hole: Black Belt ${outcome.teamPoints.black}, White Belt ${outcome.teamPoints.white}.`
+            ? `${outcome.bestBall ? `${TEAM_NAMES[outcome.bestBall]} wins best ball.` : "Best ball tied."} Dots this hole: Black Belt ${outcome.teamPoints.black}, White Belt ${outcome.teamPoints.white}.`
             : "Enter every score to see the points."}
         </p>
 

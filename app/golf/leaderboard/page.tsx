@@ -29,17 +29,17 @@ export default async function LeaderboardPage({
       <section className={styles.hero}>
         <p className="eyebrow">Season leaderboard</p>
         <h1>
-          {year} <span>{game === "points" ? "Team Points records" : "Wolf standings"}</span>
+          {year} <span>{game === "points" ? "Dots records" : "Wolf standings"}</span>
         </h1>
         <p className={styles.lead}>
           {game === "points"
-            ? "Teams change every round, so each player's record follows them. Bonus points are birdies, eagles, sand saves and closest to the hole."
+            ? "Teams change every round, so each player's record follows them. Dots are a team score: best ball, birdies, eagles, sand saves and closest to the hole all count for the team."
             : "Total Wolf points across every posted round."}{" "}
           Players are matched by name.
         </p>
         <div className={styles.tabs}>
           <a className={`button ${game === "points" ? styles.greenButton : "button-secondary"}`} href={href("points")}>
-            Team Points
+            Dots
           </a>
           <a className={`button ${game === "wolf" ? styles.greenButton : "button-secondary"}`} href={href("wolf")}>
             Wolf
@@ -86,7 +86,6 @@ export default async function LeaderboardPage({
                     <th>#</th>
                     <th>Player</th>
                     <th className={styles.num}>Record</th>
-                    <th className={styles.num}>Bonus pts</th>
                     <th className={styles.num}>Rounds</th>
                     <th className={styles.num}>Avg strokes</th>
                   </tr>
@@ -111,7 +110,6 @@ export default async function LeaderboardPage({
                         <td className={styles.num}>
                           {r.wins}-{r.losses}-{r.ties}
                         </td>
-                        <td className={styles.num}>{r.points}</td>
                       </>
                     ) : (
                       <>
@@ -128,7 +126,7 @@ export default async function LeaderboardPage({
           </div>
         ) : (
           <p className={styles.muted}>
-            No {game === "points" ? "Team Points" : "Wolf"} rounds posted for {year} yet.{" "}
+            No {game === "points" ? "Dots" : "Wolf"} rounds posted for {year} yet.{" "}
             <a href={game === "points" ? "/golf/points" : "/golf/wolf"}>Start one →</a>
           </p>
         )}

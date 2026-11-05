@@ -414,7 +414,7 @@ a.bannerCard:hover {
   white-space: nowrap;
 }
 
-/* Team Points */
+/* Dots (Black Belt vs White Belt) */
 .teamBlack {
   background: var(--ink);
   color: #fff;

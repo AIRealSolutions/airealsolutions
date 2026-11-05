@@ -1,4 +1,4 @@
-// Team Points scoring (Black Belt vs White Belt). Gross scores, no handicaps.
+// Dots scoring (Black Belt vs White Belt). Every dot counts for the team. Gross scores, no handicaps.
 //   Best ball on the hole        -> 1 point to that team (tie: no point)
 //   Birdie                        -> +1 for the player's team
 //   Eagle or better               -> +1 more (2 total)
@@ -9,7 +9,14 @@
 export type Team = "black" | "white";
 export const TEAMS: Team[] = ["black", "white"];
 export const TEAM_NAMES: Record<Team, string> = { black: "Black Belt", white: "White Belt" };
-export const POINTS_RULES = { bestBall: 1, birdie: 1, eagleBonus: 1, sandSave: 1, closest: 1 };
+export const DOTS_NAME = "Dots";
+
+export const nassauOf = (rules: Partial<typeof POINTS_RULES> | undefined) => ({
+  front: Number(rules?.nassauFront ?? 0),
+  back: Number(rules?.nassauBack ?? 0),
+  total: Number(rules?.nassauTotal ?? 0),
+});
+export const POINTS_RULES = { bestBall: 1, birdie: 1, eagleBonus: 1, sandSave: 1, closest: 1, nassauFront: 0, nassauBack: 0, nassauTotal: 0 };
 export type PointsRules = typeof POINTS_RULES;
 
 export type PointsHoleInput = {
