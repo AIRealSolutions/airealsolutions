@@ -448,6 +448,12 @@ export default function PointsScorecard({
           </span>
         </div>
         {yards && <p className={styles.holeMeta}>{yards}</p>}
+        {!outcome && (
+          <p className={styles.waiting} role="status">
+            Waiting for scores: {names.filter((_, seat) => entry.strokes[seat] === null).join(", ")}. The dots count once
+            everyone on this hole has a score. Tap + or − to enter one (the first tap sets par).
+          </p>
+        )}
 
         {names.map((name, seat) => {
           const s = entry.strokes[seat];
@@ -512,7 +518,7 @@ export default function PointsScorecard({
         <p className={styles.holeMeta}>
           {outcome
             ? `${outcome.bestBall ? `${TEAM_NAMES[outcome.bestBall]} wins best ball.` : "Best ball tied."} Dots this hole: Black Belt ${outcome.teamPoints.black}, White Belt ${outcome.teamPoints.white}.`
-            : "Enter every score to see the points."}
+            : "Dots for this hole show here once every score is in."}
         </p>
 
         <div className={styles.holeNav}>
