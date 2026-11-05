@@ -1,6 +1,4 @@
-import { formatDate, golfRead, type RecentRound } from "./lib/api";
-import { DEFAULT_RULES } from "./lib/wolf";
-import { POINTS_RULES } from "./lib/points";
+import { formatDate, getSettings, golfRead, type RecentRound } from "./lib/api";
 import styles from "./golf.module.css";
 
 export const metadata = {
@@ -9,9 +7,13 @@ export const metadata = {
 };
 
 export default async function GolfHome() {
-  const recent = await golfRead<RecentRound[]>("golf_recent_rounds", { p_limit: 8 }, []);
-  const w = DEFAULT_RULES;
-  const t = POINTS_RULES;
+  const [recent, settings] = await Promise.all([
+    golfRead<RecentRound[]>("golf_recent_rounds", { p_limit: 8 }, []),
+    getSettings(),
+  ]);
+  const w = settings.games.wolf.rules;
+  const t = settings.games.points.rules;
+  const bet = settings.betPerPoint;
 
   return (
     <div className={styles.wrap}>
@@ -27,7 +29,8 @@ export default async function GolfHome() {
       </section>
 
       <div className={styles.gameCards} id="games">
-        <section className={`${styles.card} ${styles.gameCard}`}>
+        {settings.games.points.enabled && (
+        <section className={`${styles.card} ${styles.gameCard}`} style={{ order: settings.defaultGame === "points" ? 0 : 1 }}>
           <p className="eyebrow">Team game · 2 to 8 players</p>
           <h2>Team Points: Black Belt vs White Belt</h2>
           <ul className={styles.rules}>
@@ -36,6 +39,7 @@ export default async function GolfHome() {
             <li>Birdie +{t.birdie}. Eagle or better +{t.birdie + t.eagleBonus}.</li>
             <li>Sand save +{t.sandSave}. Closest to the hole +{t.closest}.</li>
             <li>Most team points wins the round.</li>
+            {bet > 0 && <li>Losing team pays ${bet} per point of difference, each.</li>}
           </ul>
           <div className={styles.actions}>
             <a className={`button ${styles.greenButton}`} href="/golf/points">
@@ -43,8 +47,10 @@ export default async function GolfHome() {
             </a>
           </div>
         </section>
+        )}
 
-        <section className={`${styles.card} ${styles.gameCard}`}>
+        {settings.games.wolf.enabled && (
+        <section className={`${styles.card} ${styles.gameCard}`} style={{ order: settings.defaultGame === "wolf" ? 0 : 1 }}>
           <p className="eyebrow">Rotating game · 3 to 5 players</p>
           <h2>Wolf</h2>
           <ul className={styles.rules}>
@@ -54,6 +60,7 @@ export default async function GolfHome() {
               Lone Wolf wins: {w.loneWin}. Lone Wolf loses: {w.loneLoss} to each opponent.
             </li>
             <li>Ties carry no points. Most points wins.</li>
+            {bet > 0 && <li>Everyone settles up at ${bet} per point with every other player.</li>}
           </ul>
           <div className={styles.actions}>
             <a className="button button-secondary" href="/golf/wolf">
@@ -61,6 +68,7 @@ export default async function GolfHome() {
             </a>
           </div>
         </section>
+        )}
       </div>
 
       <section className={styles.card}>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { formatDate, golfRead, type SavedRound } from "../../lib/api";
 import { TEAM_NAMES, scoreLabel, type Team } from "../../lib/points";
+import { money, settleTeams, settleWolf } from "../../lib/settle";
 import ShareButton from "./ShareButton";
 import styles from "../../golf.module.css";
 
@@ -56,6 +57,16 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
   const name = (seat: number | null | undefined) =>
     seat === null || seat === undefined ? "" : (round.players.find((p) => p.seat === seat)?.name ?? "");
   const resultLabel = { win: "W", loss: "L", tie: "T" } as const;
+  const bet = Number(round.settings?.betPerPoint ?? 0);
+  const payoutBySeat = new Map<number, number>();
+  if (bet > 0) {
+    const bySeat = [...round.players].sort((a, b) => a.seat - b.seat);
+    const amounts =
+      isPoints && round.teamPoints
+        ? settleTeams(bySeat.map((p) => p.team ?? "black"), round.teamPoints, bet)
+        : settleWolf(bySeat.map((p) => p.points), bet);
+    bySeat.forEach((p, i) => payoutBySeat.set(p.seat, amounts[i]));
+  }
 
   return (
     <div className={styles.wrap}>
@@ -97,6 +108,7 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
                 <th className={styles.num}>{isPoints ? "Bonus pts" : "Points"}</th>
                 <th className={styles.num}>Strokes</th>
                 {isPoints && <th className={styles.num}>Result</th>}
+                {bet > 0 && <th className={styles.num}>${bet}/pt</th>}
               </tr>
             </thead>
             <tbody>
@@ -115,6 +127,7 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
                   <td className={styles.num}>{p.points}</td>
                   <td className={styles.num}>{p.strokes}</td>
                   {isPoints && <td className={styles.num}>{p.result ? resultLabel[p.result] : ""}</td>}
+                  {bet > 0 && <td className={styles.num}>{money(payoutBySeat.get(p.seat) ?? 0)}</td>}
                 </tr>
               ))}
             </tbody>
