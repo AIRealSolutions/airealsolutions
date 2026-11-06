@@ -1,7 +1,6 @@
 import { getRoster, playerHref } from "../lib/api";
 import { getMe, getMeMessage } from "../lib/me";
 import { getPin } from "../lib/pin";
-import { RosterList } from "../PostRound";
 import styles from "../golf.module.css";
 
 export const metadata = {
@@ -31,10 +30,22 @@ export default async function MePage() {
             {notice}
             <form method="post" action="/golf/me/login">
               <label className={styles.field}>
-                <span>Your name (as it shows on the scorecard)</span>
-                <input className={styles.input} name="name" maxLength={40} autoComplete="username" list="golf-roster" required />
+                <span>Your name</span>
+                {roster.length ? (
+                  <select className={styles.select} name="name" required defaultValue="">
+                    <option value="" disabled>
+                      Pick your name
+                    </option>
+                    {[...new Set(roster)].map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input className={styles.input} name="name" maxLength={40} autoComplete="username" required />
+                )}
               </label>
-              <RosterList names={roster} />
               <label className={styles.field}>
                 <span>PIN or sign-in code</span>
                 <input
