@@ -1,6 +1,7 @@
 // Golf Buddy data access. Everything goes through SECURITY DEFINER RPCs in the
 // shared Supabase project (see docs/golfbuddy-database.sql), so only the
 // browser-safe publishable key is ever used here.
+import type { PlayerStat } from "./skill";
 /** Public address used for shared links. */
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://airealsolutions.com").replace(/\/$/, "");
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://xqdsmbyealtammgmpsqe.supabase.co";
@@ -26,7 +27,13 @@ export type SavedHole = {
   strokes: (number | null)[];
   points: number[];
   comment: string | null;
-  extras?: { sandSaves?: number[]; closest?: number | null; bestBall?: "black" | "white" | null; teamPoints?: { black: number; white: number } };
+  extras?: {
+    sandSaves?: number[];
+    closest?: number | null;
+    bestBall?: "black" | "white" | null;
+    teamPoints?: { black: number; white: number };
+    shots?: { black?: (number | null)[]; white?: (number | null)[] }; // captain's choice: whose ball, shot by shot
+  };
 };
 export type SavedRound = {
   id: string;
@@ -129,6 +136,10 @@ export async function getSettings(): Promise<GolfSettings> {
 }
 
 export const getRoster = (pin = "") => golfRead<string[]>("golf_roster", { p_pin: pin }, [], 60);
+
+/** Per-player stats (shots used, scores, handicap). Null year = every season, used for skill ratings. */
+export const getPlayerStats = (pin = "", year: number | null = null) =>
+  golfRead<PlayerStat[]>("golf_player_stats", { p_year: year, p_pin: pin }, [], 60);
 
 export const PIN_STORAGE_KEY = "golfbuddy.pin.v1";
 
