@@ -13,26 +13,51 @@ export type PlatformStatus = {
   envVar: string;
 };
 
-async function call<T>(url: string, token: string, extra: Record<string, string> = {}): Promise<T> {
-  const r = await fetch(url, { headers: { Authorization: `Bearer ${token}`, ...extra }, cache: "no-store" });
-  const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new HttpError(r.status === 401 || r.status === 403 ? 401 : 502, d?.message || d?.error?.message || `HTTP ${r.status}`);
+async function call<T>(url: string, token: string, extra: Record<string, string> = {}, init: { method?: string; body?: unknown } = {}): Promise<T> {
+  const r = await fetch(url, {
+    method: init.method || "GET",
+    headers: { Authorization: `Bearer ${token}`, ...(init.body !== undefined ? { "Content-Type": "application/json" } : {}), ...extra },
+    body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+    cache: "no-store",
+  });
+  const text = await r.text();
+  let d: any = {};
+  try {
+    d = text ? JSON.parse(text) : {};
+  } catch {
+    d = { message: text.slice(0, 200) };
+  }
+  if (!r.ok) {
+    const msg = d?.error?.message || d?.message || (typeof d?.error === "string" ? d.error : "") || `HTTP ${r.status}`;
+    // Upstream auth failures become 502 so the browser does not mistake them for an expired Factory session.
+    throw new HttpError([404, 409, 422].includes(r.status) ? r.status : 502, msg);
+  }
   return d as T;
 }
 
-const gh = (path: string) =>
-  call<any>(`https://api.github.com${path}`, process.env.GITHUB_TOKEN!, {
+function need(envVar: string): string {
+  const v = process.env[envVar];
+  if (!v) throw new HttpError(503, `${envVar} is not set in Vercel environment variables.`);
+  return v;
+}
+
+/** GitHub REST call with the Factory's token. */
+export const gh = <T = any>(path: string, init: { method?: string; body?: unknown } = {}) =>
+  call<T>(`https://api.github.com${path}`, need("GITHUB_TOKEN"), {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
     "User-Agent": "airealsolutions-factory",
-  });
+  }, init);
 
 function vercelUrl(path: string) {
   const team = process.env.VERCEL_TEAM_ID;
   return `https://api.vercel.com${path}${team ? `${path.includes("?") ? "&" : "?"}teamId=${encodeURIComponent(team)}` : ""}`;
 }
-const vc = (path: string) => call<any>(vercelUrl(path), process.env.VERCEL_TOKEN!);
-const sb = (path: string) => call<any>(`https://api.supabase.com${path}`, process.env.SUPABASE_ACCESS_TOKEN!);
+/** Vercel REST call with the Factory's token (scoped to VERCEL_TEAM_ID when set). */
+export const vc = <T = any>(path: string, init: { method?: string; body?: unknown } = {}) => call<T>(vercelUrl(path), need("VERCEL_TOKEN"), {}, init);
+/** Supabase Management API call with the Factory's token. */
+export const sb = <T = any>(path: string, init: { method?: string; body?: unknown } = {}) =>
+  call<T>(`https://api.supabase.com${path}`, need("SUPABASE_ACCESS_TOKEN"), {}, init);
 
 async function check(
   provider: PlatformStatus["provider"],

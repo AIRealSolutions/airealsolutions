@@ -1,6 +1,7 @@
 import ArchitecturePanel from "./ArchitecturePanel";
 import EconomicsPanel from "./EconomicsPanel";
 import AssemblyLinePanel from "./AssemblyLinePanel";
+import DeliveryPanel from "./DeliveryPanel";
 import ProductSynthesisPanel from "./ProductSynthesisPanel";
 import styles from "./workspace.module.css";
 
@@ -39,6 +40,7 @@ export default async function ProjectWorkspace({params}:{params:Promise<{id:stri
       <ProductSynthesisPanel projectSlug={id}/>
       <ArchitecturePanel projectSlug={id}/>
       <EconomicsPanel projectSlug={id}/>
+      <DeliveryPanel projectSlug={id}/>
     </section>
   </main>
 }

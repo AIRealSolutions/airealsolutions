@@ -11,7 +11,22 @@ Page: **`/factory/connections`** (linked from My Factory and Admin).
 | Vercel | Factory admins | `VERCEL_TOKEN` (+ optional `VERCEL_TEAM_ID`) | Connection check, list projects |
 | Supabase | Factory admins | `SUPABASE_ACCESS_TOKEN` (Management API) | Connection check, list projects |
 
-GitHub, Vercel and Supabase are the Factory's own accounts. The build pipeline (`docs/factory-build-pipeline-plan.md`) will use them to create repos, deployments and databases for customer projects. Next step: add create actions (create repo, create Vercel project, create Supabase project) to `app/lib/integrations/platform.ts`.
+GitHub, Vercel and Supabase are the Factory's own accounts. They power the **Own infrastructure** panel below.
+
+## Own infrastructure (graduation) panel
+Shown to Factory admins at the bottom of every project workspace (`/factory/projects/<slug>#delivery`). Each step is a button. Each one can be re-run safely (it reuses what already exists), and its result is saved in `factory_project_infrastructure`:
+
+| Step | What happens |
+|---|---|
+| 1. GitHub repository | Creates private repo `<owner>/<project-slug>` from `GITHUB_TEMPLATE_REPO`, or a README-only repo. If the name already exists, it adopts that repo. |
+| 2. Supabase database | Creates a new Supabase project (Americas region). **It asks for confirmation because it can add a monthly charge.** A random database password is encrypted before it is stored. |
+| 3. Vercel project | Creates a Next.js project linked to the repo, so every push to `main` deploys. The Vercel GitHub app must have access to the repo. |
+| 4. Connect database to site | Waits until the database is `ACTIVE_HEALTHY`, reads its keys and saves `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY` (sensitive) into the Vercel project. |
+| 5. Deploy | Starts a production deployment of the repo's default branch. A README-only repo will fail to build until real code is pushed; that is expected. |
+| 6. Custom domain | Adds the domain to the Vercel project and shows the exact DNS records to add at GoDaddy (A `@` → 76.76.21.21 for a root domain, CNAME for a subdomain, plus a TXT ownership record if Vercel asks). **Refresh status** confirms when it is live. |
+
+The project record's `repository_url` and `deployment_url` are filled in as steps succeed. Each step is also written to `factory_project_events`.
+API: `GET /api/factory/provision?project=<slug>` and `POST /api/factory/provision` `{project, action: github|supabase|vercel|link|deploy|domain|refresh, confirmCost?, domain?}`. Admin only.
 
 ## Security
 - Google tokens are encrypted on the server (AES-256-GCM, `INTEGRATIONS_ENCRYPTION_KEY`) before they are stored in `factory_user_integrations`. The database and browser only ever see ciphertext.
@@ -58,4 +73,4 @@ Redeploy after adding environment variables.
 | `POST /api/integrations/calendar` | `{summary,start,end,timeZone?,location?,description?,attendees?}` |
 | `GET /api/integrations/platform?provider=github\|vercel\|supabase` | Admin: list resources |
 
-Database: `docs/factory-integrations.sql` (applied as migration `factory_integrations`).
+Database: `docs/factory-integrations.sql` (applied as migrations `factory_integrations`, `factory_project_infrastructure` and `factory_admin_project_helpers`).

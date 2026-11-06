@@ -1,0 +1,27 @@
+.panel{margin-top:32px;border:1px solid var(--line);background:var(--surface);border-radius:22px;padding:26px;display:grid;gap:18px}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.head h2{margin-bottom:6px}
+.head p{color:var(--muted);margin:0}
+.head .button{white-space:nowrap;flex:none}
+.msg{background:#eef3f9;border-radius:12px;padding:10px 14px;margin:0}
+.error{background:#fff1f0;border:1px solid #f5c2bd;color:#8a1c12;border-radius:12px;padding:10px 14px;margin:0}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.steps li{display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:center;border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.steps li>b{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#eef3f9;color:var(--brand);font-size:.8rem}
+.steps li.done>b{background:var(--accent);color:#fff}
+.steps li div{display:grid;gap:2px;min-width:0}
+.steps small{color:var(--muted);overflow-wrap:anywhere}
+.steps a{color:var(--brand);font-weight:700}
+.steps .button{padding:10px 16px;white-space:nowrap}
+.need{color:#8a5a00!important;font-weight:700}
+.domain{border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:10px}
+.domain form{display:flex;gap:8px}
+.domain input{flex:1;min-width:0;border:1px solid #cfd7e3;border-radius:12px;background:#fbfcfe;padding:10px 12px;font:inherit}
+.domain .button{padding:10px 16px}
+.small{color:var(--muted);font-size:.9rem;margin:0}
+.tableWrap{overflow-x:auto}
+.domain table{border-collapse:collapse;width:100%;font-size:.88rem}
+.domain th,.domain td{text-align:left;padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+.domain th{color:var(--muted);font-weight:700}
+.domain code{background:#eef3f9;padding:2px 6px;border-radius:6px;overflow-wrap:anywhere}
+@media(max-width:620px){.domain thead{display:none}.domain table,.domain tbody,.domain tr,.domain td{display:block}.domain tr{border-top:1px solid var(--line);padding:8px 0}.domain td{border:0;padding:3px 0}.domain td[data-label]:not([data-label=""])::before{content:attr(data-label);display:block;color:var(--muted);font-size:.75rem;font-weight:700}.domain td[data-label=""]{color:var(--muted);font-size:.8rem}.panel{padding:18px}.head{flex-direction:column}.steps li{grid-template-columns:36px 1fr}.steps li>span{grid-column:2}.domain form{flex-direction:column}}
