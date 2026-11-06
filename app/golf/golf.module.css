@@ -602,3 +602,86 @@ a.bannerCard:hover {
   font-size: 0.88rem;
   margin: 8px 0 4px;
 }
+
+/* Shot tracking and skill */
+.skillBox {
+  background: var(--green-soft);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+.skillChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.skillChip {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+.shotBox {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 8px 12px 10px;
+  margin: 12px 0 0;
+}
+.shotBox legend {
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0 6px;
+}
+.shotRow {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-top: 1px solid var(--line);
+}
+.shotRow:first-of-type {
+  border-top: 0;
+}
+.shotRow > span {
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+.shotRow .chipSmall {
+  margin-top: 0;
+}
+.statLeaders {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 10px;
+}
+.statLeaders > div {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: #fff;
+}
+.statLeaders small {
+  display: block;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+.statLeaders strong {
+  display: block;
+  font-size: 1.05rem;
+}
+.playerLink {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+}
+.playerLink:hover {
+  text-decoration-color: var(--green);
+}

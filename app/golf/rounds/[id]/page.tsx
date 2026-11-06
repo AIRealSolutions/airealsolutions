@@ -4,6 +4,7 @@ import { formatDate, golfRead, type SavedRound } from "../../lib/api";
 import { getPin } from "../../lib/pin";
 import { TEAM_NAMES, nassauOf, scoreLabel, type Team } from "../../lib/points";
 import { money, settleDots, settleWolf } from "../../lib/settle";
+import { roundShotStats } from "../../lib/skill";
 import ShareButton from "./ShareButton";
 import styles from "../../golf.module.css";
 
@@ -78,6 +79,9 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
       )
     : null;
   const hasMoney = isPoints ? bet > 0 || nassau.front > 0 || nassau.back > 0 || nassau.total > 0 : bet > 0;
+  const shotStats = scramble ? roundShotStats(round.holes, bySeat.map((p) => p.seat)) : [];
+  const shotsTracked = shotStats.some((s) => s.used > 0);
+  const topShots = Math.max(0, ...shotStats.map((s) => s.used));
   const payoutBySeat = new Map<number, number>();
   if (hasMoney) {
     const amounts = dots ? dots.perPlayer : settleWolf(bySeat.map((p) => p.points), bet);
@@ -184,6 +188,44 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
         {round.submittedBy && <p className={styles.muted}>Scorekeeper: {round.submittedBy}</p>}
       </section>
 
+      {shotsTracked && (
+        <section className={styles.card}>
+          <h2>Shots used</h2>
+          <p className={styles.muted}>
+            Captain&apos;s choice: whose ball the team played, shot by shot.{" "}
+            <strong>
+              Most shots used: {shotStats.filter((s) => s.used === topShots).map((s) => name(s.seat)).join(" & ")} ({topShots})
+            </strong>
+          </p>
+          <div className={styles.tableScroll}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Team</th>
+                  <th className={styles.num}>Shots used</th>
+                  <th className={styles.num}>Tee shots</th>
+                  <th className={styles.num}>Holed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...shotStats].sort((a, b) => b.used - a.used).map((s) => (
+                  <tr key={s.seat} className={s.used === topShots ? styles.winnerRow : undefined}>
+                    <td>{name(s.seat)}</td>
+                    <td>
+                      <TeamTag team={round.players.find((p) => p.seat === s.seat)?.team ?? null} />
+                    </td>
+                    <td className={styles.num}>{s.used}</td>
+                    <td className={styles.num}>{s.tee}</td>
+                    <td className={styles.num}>{s.holed}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       <section className={styles.card}>
         <h2>Hole by hole</h2>
         <div className={styles.tableScroll}>
@@ -232,6 +274,10 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
                       const label = isPoints ? scoreLabel(h.par, s) : null;
                       const sand = isPoints && ex.sandSaves?.includes(p.seat);
                       const closest = isPoints && ex.closest === p.seat;
+                      const shots = scramble && p.team ? (ex.shots?.[p.team] ?? []) : [];
+                      const shotLine = shots.some((x) => x !== null && x !== undefined)
+                        ? shots.map((x) => (x === null || x === undefined ? "–" : name(x).split(" ")[0])).join(" → ")
+                        : "";
                       return (
                         <td key={p.seat} className={styles.num}>
                           {s}
@@ -239,6 +285,11 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
                           {(label || sand || closest) && (
                             <small className={styles.muted} style={{ display: "block" }}>
                               {[label, sand && "Sand", closest && "Closest"].filter(Boolean).join(" · ")}
+                            </small>
+                          )}
+                          {shotLine && (
+                            <small className={styles.muted} style={{ display: "block", whiteSpace: "normal" }}>
+                              {shotLine}
                             </small>
                           )}
                         </td>

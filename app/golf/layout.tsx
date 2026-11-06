@@ -31,6 +31,8 @@ export default async function GolfLayout({ children }: Readonly<{ children: Reac
         <nav aria-label="Golf Buddy navigation" className={styles.nav}>
           <a href="/golf">Golf Buddy</a>
           <a href="/golf/leaderboard">Leaderboard</a>
+          <a href="/golf/players">Players</a>
+          <a href="/golf/stats">Stats</a>
           <a className="nav-cta" href="/golf#games">
             Start a round
           </a>

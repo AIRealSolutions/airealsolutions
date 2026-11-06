@@ -16,9 +16,26 @@ import {
   type PointsHoleInput,
   type Team,
 } from "../lib/points";
+import {
+  balanceTeams,
+  buildSkills,
+  keyOf,
+  ratingFor,
+  roundShotStats,
+  shotLabel,
+  teamStrength,
+  type PlayerStat,
+  type ShotLog,
+} from "../lib/skill";
 import styles from "../golf.module.css";
 
-type HoleEntry = { strokes: (number | null)[]; sandSaves: boolean[]; closest: number | null; comment: string };
+type HoleEntry = {
+  strokes: (number | null)[];
+  sandSaves: boolean[];
+  closest: number | null;
+  comment: string;
+  shots?: ShotLog; // captain's choice: whose ball the team used, shot by shot
+};
 type RoundBet = { front: number; back: number; total: number; perDot: number };
 type DotRules = GolfSettings["games"]["points"]["rules"];
 const DOT_FIELDS: [keyof DotRules, string][] = [
@@ -66,13 +83,16 @@ export default function PointsScorecard({
   courses,
   settings,
   roster,
+  stats = [],
   pin = "",
 }: {
   courses: Course[];
   settings: GolfSettings;
   roster: string[];
+  stats?: PlayerStat[];
   pin?: string;
 }) {
+  const skills = useMemo(() => buildSkills(stats), [stats]);
   const panelRules = settings.games.points.rules;
   const [draft, setDraft] = useState<Draft>(() => newDraft(courses[0]?.id ?? null));
   // Dot values: from the control panel unless changed for this round on the setup screen.
@@ -104,6 +124,12 @@ export default function PointsScorecard({
   );
   const running = useMemo(() => pointsTotals(holeInputs, n, rules), [holeInputs, n, rules]);
   const update = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
+  // Captain's choice: one pick per team stroke (trimmed if the score went down).
+  const shotsFor = (h: HoleEntry, team: Team) => {
+    const count = h.strokes[captains[team]] ?? 0;
+    const list = h.shots?.[team] ?? [];
+    return Array.from({ length: count }, (_, k) => list[k] ?? null);
+  };
   const updateHole = (index: number, patch: Partial<HoleEntry>) =>
     setDraft((d) => ({ ...d, holes: d.holes.map((h, i) => (i === index ? { ...h, ...patch } : h)) }));
 
@@ -162,6 +188,10 @@ export default function PointsScorecard({
       order.forEach((seat, k) => (next[seat] = k % 2 === 0 ? "black" : "white"));
       update({ teams: next });
     };
+    const ratings = names.map((name) => ratingFor(skills, name));
+    const strength = teamStrength(ratings, teams);
+    const hasHistory = names.some((name) => name.trim() && skills.has(keyOf(name)));
+    const balance = () => update({ teams: balanceTeams(ratings) });
     const start = () => {
       const cleaned = names.map((p) => p.trim());
       if (!course) return setError("Pick a course.");
@@ -250,7 +280,30 @@ export default function PointsScorecard({
               <button type="button" className={styles.textButton} onClick={shuffle}>
                 Shuffle teams
               </button>
+              <button type="button" className={styles.textButton} onClick={balance}>
+                Balance by skill
+              </button>
             </p>
+          </div>
+          <div className={styles.skillBox} aria-live="polite">
+            <div className={styles.skillChips}>
+              {names.map((name, i) => {
+                const skill = name.trim() ? skills.get(keyOf(name)) : undefined;
+                if (!name.trim()) return null;
+                return (
+                  <span key={i} className={styles.skillChip} title={skill?.basis ?? "New player: uses the group average"}>
+                    <strong>{name.trim()}</strong> {skill && !skill.provisional ? `${skill.tier} · ${skill.rating}` : `new · ${ratings[i]}`}
+                  </span>
+                );
+              })}
+            </div>
+            <small className={styles.muted}>
+              Team skill (lower is better): {TEAM_NAMES.black} {strength.black} · {TEAM_NAMES.white} {strength.white}
+              {Math.abs(strength.black - strength.white) <= 1 ? " · Even match" : ""}.
+              {hasHistory
+                ? " From handicaps, scores and captain's choice shots used."
+                : " Ratings fill in as rounds are posted and players get handicaps in the control panel."}
+            </small>
           </div>
           <label className={styles.checkRow}>
             <input type="checkbox" checked={Boolean(draft.scramble)} onChange={(e) => update({ scramble: e.target.checked })} />
@@ -362,6 +415,7 @@ export default function PointsScorecard({
                   closest: h.closest,
                   bestBall: outcome.bestBall,
                   teamPoints: outcome.teamPoints,
+                  ...(draft.scramble ? { shots: { black: shotsFor(draft.holes[i], "black"), white: shotsFor(draft.holes[i], "white") } } : {}),
                 },
                 comment: draft.holes[i].comment.trim(),
               };
@@ -429,6 +483,16 @@ export default function PointsScorecard({
               </tbody>
             </table>
           </div>
+          {draft.scramble && (
+            <ShotsTable
+              names={names}
+              teams={teams}
+              stats={roundShotStats(
+                completed.map(({ i }) => ({ extras: { shots: { black: shotsFor(draft.holes[i], "black"), white: shotsFor(draft.holes[i], "white") } } })),
+                names.map((_, seat) => seat),
+              )}
+            />
+          )}
           <PostRound
             pinRequired={settings.pinRequired}
             defaultPin={pin}
@@ -514,6 +578,42 @@ export default function PointsScorecard({
           );
         })}
 
+        {draft.scramble &&
+          TEAMS.map((team) => {
+            const list = shotsFor(entry, team);
+            const members = names.map((_, seat) => seat).filter((seat) => teams[seat] === team);
+            if (!list.length || members.length < 2) return null;
+            const setShot = (k: number, seat: number) =>
+              updateHole(i, {
+                shots: { ...entry.shots, [team]: list.map((v, j) => (j === k ? (v === seat ? null : seat) : v)) },
+              });
+            return (
+              <fieldset key={team} className={styles.shotBox}>
+                <legend>
+                  <TeamTag team={team} /> Whose shot did you use?
+                </legend>
+                {list.map((picked, k) => (
+                  <div className={styles.shotRow} key={k}>
+                    <span>{shotLabel(k, list.length, hole.par)}</span>
+                    <div className={styles.chips} style={{ margin: 0 }}>
+                      {members.map((seat) => (
+                        <button
+                          type="button"
+                          key={seat}
+                          aria-pressed={picked === seat}
+                          className={`${styles.chip} ${styles.chipSmall} ${picked === seat ? styles.chipOn : ""}`}
+                          onClick={() => setShot(k, seat)}
+                        >
+                          {names[seat]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </fieldset>
+            );
+          })}
+
         <p className={styles.holeMeta} style={{ marginTop: 14, marginBottom: 6 }}>
           Closest to the hole
         </p>
@@ -597,6 +697,40 @@ export default function PointsScorecard({
           </button>
         </p>
       </section>
+    </div>
+  );
+}
+
+/** Captain's choice: how many of each player's shots the team used. */
+function ShotsTable({ names, teams, stats }: { names: string[]; teams: Team[]; stats: ReturnType<typeof roundShotStats> }) {
+  if (!stats.some((s) => s.used)) return null;
+  const top = Math.max(...stats.map((s) => s.used));
+  return (
+    <div className={styles.tableScroll} style={{ marginTop: 12 }}>
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            <th>Shots used</th>
+            <th>Team</th>
+            <th className={styles.num}>Shots</th>
+            <th className={styles.num}>Tee</th>
+            <th className={styles.num}>Holed</th>
+          </tr>
+        </thead>
+        <tbody>
+          {stats.map((s) => (
+            <tr key={s.seat} className={s.used === top ? styles.winnerRow : undefined}>
+              <td>{names[s.seat]}</td>
+              <td>
+                <TeamTag team={teams[s.seat]} />
+              </td>
+              <td className={styles.num}>{s.used}</td>
+              <td className={styles.num}>{s.tee}</td>
+              <td className={styles.num}>{s.holed}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
