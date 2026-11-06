@@ -1,4 +1,4 @@
-import { getPlayerStats } from "../lib/api";
+import { getPlayerStats, playerHref } from "../lib/api";
 import { getPin } from "../lib/pin";
 import { buildSkills, keyOf, shareIndex, TIER_LABEL, type PlayerStat } from "../lib/skill";
 import styles from "../golf.module.css";
@@ -108,7 +108,11 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
                   const idx = shareIndex(r);
                   return (
                     <tr key={r.name} className={i === 0 && r.shotsUsed > 0 ? styles.winnerRow : undefined}>
-                      <td>{r.name}</td>
+                      <td>
+                        <a className={styles.playerLink} href={playerHref(r.name)}>
+                          {r.name}
+                        </a>
+                      </td>
                       <td title={skill?.basis} style={{ whiteSpace: "nowrap" }}>
                         {skill && !skill.provisional ? (
                           <>

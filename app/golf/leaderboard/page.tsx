@@ -1,4 +1,4 @@
-import { golfRead, type LeaderRow, type TeamRecord } from "../lib/api";
+import { golfRead, playerHref, type LeaderRow, type TeamRecord } from "../lib/api";
 import { getPin } from "../lib/pin";
 import styles from "../golf.module.css";
 
@@ -106,7 +106,11 @@ export default async function LeaderboardPage({
                 {rows.map((r, i) => (
                   <tr key={r.name} className={i === 0 ? styles.winnerRow : undefined}>
                     <td>{i + 1}</td>
-                    <td>{r.name}</td>
+                    <td>
+                      <a className={styles.playerLink} href={playerHref(r.name)}>
+                        {r.name}
+                      </a>
+                    </td>
                     {game === "points" ? (
                       <>
                         <td className={styles.num}>

@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { formatDate, golfRpc, normalizeSettings, type GolfSettings } from "../lib/api";
+import { formatDate, golfRpc, normalizeSettings, playerHref, type GolfSettings, type Tees } from "../lib/api";
 import styles from "../golf.module.css";
 
 type Player = {
   id: number;
   name: string;
+  nickname: string | null;
+  tees: Tees | null;
   email: string | null;
   phone: string | null;
   handicap: number | null;
@@ -21,10 +23,21 @@ type Player = {
 type AdminRound = { id: string; format: "wolf" | "points"; playedOn: string; course: string; submittedBy: string | null; players: string };
 type AdminData = { settings: GolfSettings & { groupPinSet?: boolean }; players: Player[]; unknownNames: string[]; rounds: AdminRound[] };
 type Tab = "settings" | "players" | "rounds" | "pins";
-type PlayerForm = { id?: number; name: string; email: string; phone: string; handicap: string; tags: string; notes: string; isActive: boolean };
+type PlayerForm = {
+  id?: number;
+  name: string;
+  nickname: string;
+  tees: Tees | "";
+  email: string;
+  phone: string;
+  handicap: string;
+  tags: string;
+  notes: string;
+  isActive: boolean;
+};
 
 const PIN_KEY = "golfbuddy.admin.pin";
-const emptyForm: PlayerForm = { name: "", email: "", phone: "", handicap: "", tags: "", notes: "", isActive: true };
+const emptyForm: PlayerForm = { name: "", nickname: "", tees: "", email: "", phone: "", handicap: "", tags: "", notes: "", isActive: true };
 
 const POINT_FIELDS: [keyof GolfSettings["games"]["points"]["rules"], string][] = [
   ["nassauFront", "Bet: front 9 ($ per player)"],
@@ -169,6 +182,8 @@ export default function AdminPanel() {
         ? {
             id: p.id,
             name: p.name,
+            nickname: p.nickname ?? "",
+            tees: p.tees ?? "",
             email: p.email ?? "",
             phone: p.phone ?? "",
             handicap: p.handicap === null ? "" : String(p.handicap),
@@ -180,9 +195,9 @@ export default function AdminPanel() {
     );
 
   const exportCsv = () => {
-    const header = ["Name", "Phone", "Email", "Handicap", "Tags", "Notes", "Active", "Rounds", "Last played"];
+    const header = ["Name", "Nickname", "Tees", "Phone", "Email", "Handicap", "Tags", "Notes", "Active", "Rounds", "Last played"];
     const rows = (data.players ?? []).map((p) =>
-      [p.name, p.phone, p.email, p.handicap, p.tags.join("; "), p.notes, p.isActive ? "yes" : "no", p.rounds, p.lastPlayed]
+      [p.name, p.nickname, p.tees, p.phone, p.email, p.handicap, p.tags.join("; "), p.notes, p.isActive ? "yes" : "no", p.rounds, p.lastPlayed]
         .map(csvCell)
         .join(","),
     );
@@ -340,6 +355,19 @@ export default function AdminPanel() {
                   <input className={styles.input} value={form.name} maxLength={40} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                 </label>
                 <label className={styles.field}>
+                  <span>Nickname (optional)</span>
+                  <input className={styles.input} value={form.nickname} maxLength={40} onChange={(e) => setForm({ ...form, nickname: e.target.value })} />
+                </label>
+                <label className={styles.field}>
+                  <span>Usual tees</span>
+                  <select className={styles.select} value={form.tees} onChange={(e) => setForm({ ...form, tees: e.target.value as Tees | "" })}>
+                    <option value="">Not set</option>
+                    <option value="white">White</option>
+                    <option value="blue">Blue</option>
+                    <option value="black">Black</option>
+                  </select>
+                </label>
+                <label className={styles.field}>
                   <span>Phone</span>
                   <input className={styles.input} type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
                 </label>
@@ -443,6 +471,12 @@ export default function AdminPanel() {
                       <tr key={p.id} onClick={() => editPlayer(p)} style={{ cursor: "pointer", opacity: p.isActive ? 1 : 0.55 }}>
                         <td>
                           <strong>{p.name}</strong>
+                          {p.nickname && <span className={styles.muted}> “{p.nickname}”</span>}
+                          {p.rounds > 0 && (
+                            <a className={styles.playerLink} style={{ marginLeft: 8, fontSize: "0.8rem" }} href={playerHref(p.name)} onClick={(e) => e.stopPropagation()}>
+                              Profile
+                            </a>
+                          )}
                           {p.tags.length > 0 && <small className={styles.muted} style={{ display: "block" }}>{p.tags.join(" · ")}</small>}
                         </td>
                         <td>
@@ -475,7 +509,19 @@ export default function AdminPanel() {
           {data.unknownNames.length > 0 && (
             <section className={styles.card}>
               <h2>Names from posted rounds</h2>
-              <p className={styles.muted}>These players have played but aren't in your list yet. Tap to add them.</p>
+              <p className={styles.muted}>
+                These players have played but aren&apos;t in your list yet. Tap one to add their details, or add them all at once.
+              </p>
+              <p>
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  disabled={busy}
+                  onClick={() => call("import_names", {}, pin, `${data.unknownNames.length} players added.`)}
+                >
+                  Add all {data.unknownNames.length}
+                </button>
+              </p>
               <div className={styles.chips}>
                 {data.unknownNames.map((n) => (
                   <button type="button" key={n} className={styles.chip} onClick={() => editPlayer(undefined, n)}>

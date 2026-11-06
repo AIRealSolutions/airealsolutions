@@ -656,7 +656,7 @@ a.bannerCard:hover {
 }
 .statLeaders {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
   gap: 10px;
 }
 .statLeaders > div {
@@ -674,4 +674,14 @@ a.bannerCard:hover {
 .statLeaders strong {
   display: block;
   font-size: 1.05rem;
+}
+.playerLink {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+}
+.playerLink:hover {
+  text-decoration-color: var(--green);
 }

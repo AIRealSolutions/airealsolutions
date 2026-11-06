@@ -141,6 +141,50 @@ export const getRoster = (pin = "") => golfRead<string[]>("golf_roster", { p_pin
 export const getPlayerStats = (pin = "", year: number | null = null) =>
   golfRead<PlayerStat[]>("golf_player_stats", { p_year: year, p_pin: pin }, [], 60);
 
+/* ---------- Player database (public pages never get email, phone, notes or tags) ---------- */
+export type Tees = "white" | "blue" | "black";
+export type DirectoryPlayer = {
+  name: string;
+  nickname: string | null;
+  handicap: number | null;
+  tees: Tees | null;
+  inList: boolean;
+  active: boolean;
+  rounds: number;
+  lastPlayed: string | null;
+  wins: number;
+  losses: number;
+  ties: number;
+};
+type Record3 = { rounds: number; wins: number; losses: number; ties: number };
+export type PlayerProfile = {
+  name: string;
+  nickname: string | null;
+  handicap: number | null;
+  tees: Tees | null;
+  inList: boolean;
+  memberSince: string | null;
+  stats: PlayerStat | null;
+  formats: Partial<Record<"points" | "wolf", Record3 & { points: number; avgStrokes: number | null }>>;
+  partners: (Record3 & { name: string })[];
+  rounds: {
+    id: string;
+    format: "points" | "wolf";
+    playedOn: string;
+    course: string;
+    team: "black" | "white" | null;
+    result: "win" | "loss" | "tie" | null;
+    points: number;
+    strokes: number;
+    scramble: boolean;
+    with: string | null;
+  }[];
+};
+export const getPlayers = (pin = "") => golfRead<DirectoryPlayer[]>("golf_players", { p_pin: pin }, [], 60);
+export const getPlayer = (name: string, pin = "") => golfRead<PlayerProfile | null>("golf_player", { p_name: name, p_pin: pin }, null, 60);
+/** Profile link for a name (names are matched case-insensitively). */
+export const playerHref = (name: string) => `/golf/players/${encodeURIComponent(name.trim())}`;
+
 export const PIN_STORAGE_KEY = "golfbuddy.pin.v1";
 
 /** Posts a round. Returns the new round id, or throws (error.pin = true for a PIN problem). */
