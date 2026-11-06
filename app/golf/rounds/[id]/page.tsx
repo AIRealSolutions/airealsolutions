@@ -7,7 +7,8 @@ import { TEAM_NAMES, nassauOf, scoreLabel, type Team } from "../../lib/points";
 import { money, settleDots, settleWolf } from "../../lib/settle";
 import { roundShotStats } from "../../lib/skill";
 import ShareButton from "./ShareButton";
-import ShotMap, { type ShotMapHole } from "./ShotMap";
+import ShotMap, { type ShotMapHole, type ShotTrack } from "./ShotMap";
+import { SEAT_COLORS } from "../../GpsPanel";
 import styles from "../../golf.module.css";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -85,28 +86,45 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
   const shotsTracked = shotStats.some((s) => s.used > 0);
   const topShots = Math.max(0, ...shotStats.map((s) => s.used));
 
-  // GPS: where shots were hit from (captain's choice), measured against the course map.
-  const hasSpots = scramble && round.holes.some((h) => Object.values(h.extras?.shotSpots ?? {}).some((l) => l?.some(Boolean)));
+  // GPS: where shots were hit from, measured against the course map. Captain's choice tracks each
+  // team's ball (extras.shots + shotSpots); regular rounds track each player's own ball (seatSpots).
+  const spotted = (l: unknown) => Array.isArray(l) && l.some(Boolean);
+  const hasSpots =
+    isPoints &&
+    round.holes.some((h) => Object.values(h.extras?.shotSpots ?? {}).some(spotted) || (h.extras?.seatSpots ?? []).some(spotted));
   const courseHoles = hasSpots
     ? ((await golfRead<Course[]>("golf_courses", { p_pin: await getPin() }, [], 300)).find((c) => c.id === round.course.id)?.holes ?? [])
     : [];
   const greenOf = (n: number) => (courseHoles.find((x) => x.number === n)?.green ?? null) as Spot | null;
   const drives: { seat: number; yds: number; hole: number }[] = [];
   const mapHoles: ShotMapHole[] = [];
+  const addDrive = (h: { par: number; number: number }, spots: (Spot | null)[], seat: number | null | undefined) => {
+    const yds = shotYards(spots, greenOf(h.number))[0];
+    if (h.par >= 4 && yds !== null && yds >= 30 && yds <= 450 && seat !== null && seat !== undefined) drives.push({ seat, yds, hole: h.number });
+  };
   if (hasSpots) {
     for (const h of round.holes) {
-      const teams: ShotMapHole["teams"] = {};
+      const tracks: ShotTrack[] = [];
       for (const team of ["black", "white"] as Team[]) {
         const spots = (h.extras?.shotSpots?.[team] ?? []) as (Spot | null)[];
+        if (!spotted(spots)) continue;
         const who = h.extras?.shots?.[team] ?? [];
-        if (!spots.some(Boolean)) continue;
-        teams[team] = { spots, who: spots.map((_, k) => (who[k] === null || who[k] === undefined ? "" : name(who[k]))) };
-        const yds = shotYards(spots, greenOf(h.number))[0];
-        if (h.par >= 4 && yds !== null && yds >= 30 && yds <= 450 && who[0] !== null && who[0] !== undefined)
-          drives.push({ seat: who[0]!, yds, hole: h.number });
+        tracks.push({
+          name: TEAM_NAMES[team],
+          color: team === "black" ? "#111827" : "#ffffff",
+          spots,
+          who: spots.map((_, k) => (who[k] === null || who[k] === undefined ? "" : name(who[k]))),
+        });
+        addDrive(h, spots, who[0]);
       }
+      (h.extras?.seatSpots ?? []).forEach((list, seat) => {
+        const spots = (list ?? []) as (Spot | null)[];
+        if (!spotted(spots)) return;
+        tracks.push({ name: name(seat), color: SEAT_COLORS[seat % SEAT_COLORS.length], spots, who: spots.map(() => name(seat)) });
+        addDrive(h, spots, seat);
+      });
       const c = courseHoles.find((x) => x.number === h.number);
-      if (Object.keys(teams).length) mapHoles.push({ number: h.number, par: h.par, tee: (c?.tee ?? null) as Spot | null, green: greenOf(h.number), teams });
+      if (tracks.length) mapHoles.push({ number: h.number, par: h.par, tee: (c?.tee ?? null) as Spot | null, green: greenOf(h.number), tracks });
     }
   }
   const longest = drives.sort((a, b) => b.yds - a.yds)[0];
@@ -263,6 +281,11 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
       {mapHoles.length > 0 && (
         <section className={styles.card}>
           <h2>Shot map</h2>
+          {longest && !shotsTracked && (
+            <p className={styles.muted}>
+              <strong>Longest drive: {name(longest.seat)}, {longest.yds} yds</strong> (hole {longest.hole})
+            </p>
+          )}
           <ShotMap holes={mapHoles} />
         </section>
       )}
@@ -317,6 +340,7 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
                       const closest = isPoints && ex.closest === p.seat;
                       const shots = scramble && p.team ? (ex.shots?.[p.team] ?? []) : [];
                       const yds = scramble && p.team ? shotYards((ex.shotSpots?.[p.team] ?? []) as (Spot | null)[], greenOf(h.number)) : [];
+                      const ownYds = !scramble && isPoints ? shotYards((ex.seatSpots?.[p.seat] ?? []) as (Spot | null)[], greenOf(h.number)) : [];
                       const shotLine = shots.some((x) => x !== null && x !== undefined)
                         ? shots
                             .map((x, k) => `${x === null || x === undefined ? "–" : name(x).split(" ")[0]}${yds[k] ? ` ${yds[k]}y` : ""}`)
@@ -334,6 +358,11 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
                           {shotLine && (
                             <small className={styles.muted} style={{ display: "block", whiteSpace: "normal" }}>
                               {shotLine}
+                            </small>
+                          )}
+                          {ownYds.some((y) => y !== null) && (
+                            <small className={styles.muted} style={{ display: "block", whiteSpace: "normal" }}>
+                              {ownYds.map((y) => (y === null ? "–" : `${y}y`)).join(" · ")}
                             </small>
                           )}
                         </td>

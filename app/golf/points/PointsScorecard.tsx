@@ -28,8 +28,10 @@ import {
   type PlayerStat,
   type ShotLog,
 } from "../lib/skill";
-import { currentFix, shotYards, yardsBetween, type Fix, type Spot, type SpotLog } from "../lib/geo";
-import HoleMap, { type MapShot } from "../HoleMap";
+import { shotYards, type Spot, type SpotLog } from "../lib/geo";
+import { useGps } from "../lib/useGps";
+import type { MapShot } from "../HoleMap";
+import GpsPanel, { SEAT_COLORS } from "../GpsPanel";
 import styles from "../golf.module.css";
 
 type HoleEntry = {
@@ -39,6 +41,7 @@ type HoleEntry = {
   comment: string;
   shots?: ShotLog; // captain's choice: whose ball the team used, shot by shot
   spots?: SpotLog; // GPS: where each of those shots was hit from
+  seatSpots?: (Spot | null)[][]; // GPS, regular rounds: each player's own shots, by seat
 };
 type RoundBet = { front: number; back: number; total: number; perDot: number };
 type DotRules = GolfSettings["games"]["points"]["rules"];
@@ -142,56 +145,60 @@ export default function PointsScorecard({
   const updateHole = (index: number, patch: Partial<HoleEntry>) =>
     setDraft((d) => ({ ...d, holes: d.holes.map((h, i) => (i === index ? { ...h, ...patch } : h)) }));
 
-  // GPS: live position while turned on (rangefinder + quick shot marking).
-  const [gpsOn, setGpsOn] = useState(false);
-  const [fix, setFix] = useState<Fix | null>(null);
-  const [gpsError, setGpsError] = useState<string | null>(null);
-  const [marking, setMarking] = useState<Team | null>(null);
-  const [showMap, setShowMap] = useState(true);
-  useEffect(() => {
-    if (!gpsOn) return;
-    if (!navigator.geolocation) {
-      setGpsError("This phone has no GPS in the browser.");
-      return;
-    }
-    const id = navigator.geolocation.watchPosition(
-      (p) => {
-        setGpsError(null);
-        setFix({ spot: [p.coords.latitude, p.coords.longitude], accuracy: Math.round(p.coords.accuracy), at: Date.now() });
-      },
-      (e) => setGpsError(e.code === e.PERMISSION_DENIED ? "Location is blocked. Allow location for this site in your browser settings." : "Waiting for GPS…"),
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 },
-    );
-    return () => navigator.geolocation.clearWatch(id);
-  }, [gpsOn]);
+  // GPS: live position while turned on (rangefinder + shot marking).
+  const gps = useGps();
+  const [marking, setMarking] = useState<string | null>(null);
 
-  /** Marks where a team's shot is hit from: shot k, or the next unmarked one (adding a stroke if needed). */
-  const markShot = async (index: number, team: Team, k?: number) => {
-    setMarking(team);
+  /** Regular rounds: where each player's own shots were hit from (one list per seat). */
+  const seatSpotsFor = (h: HoleEntry, seat: number): (Spot | null)[] => {
+    const count = h.strokes[seat] ?? 0;
+    const list = h.seatSpots?.[seat] ?? [];
+    return Array.from({ length: count }, (_, k) => list[k] ?? null);
+  };
+
+  /** Puts a GPS spot at shot k (or the next unmarked shot, adding a stroke when all are marked). */
+  const placeSpot = (list: (Spot | null)[] | undefined, count: number, spot: Spot, k?: number) => {
+    const spots = Array.from({ length: Math.max(count, list?.length ?? 0) }, (_, j) => list?.[j] ?? null);
+    const open = spots.slice(0, count).findIndex((x) => !x);
+    const at = k ?? (open >= 0 ? open : count);
+    spots[at] = spot;
+    return { spots, strokes: at >= count ? Math.min(15, at + 1) : count };
+  };
+
+  const withFix = async (key: string, apply: (spot: Spot) => void) => {
+    setMarking(key);
     try {
-      const reading = fix && Date.now() - fix.at < 10000 ? fix : await currentFix();
-      setGpsOn(true);
-      setDraft((d) => {
-        const h = d.holes[index];
-        const cap = d.teams.indexOf(team);
-        const count = h.strokes[cap] ?? 0;
-        const spots = Array.from({ length: Math.max(count, (h.spots?.[team] ?? []).length) }, (_, j) => h.spots?.[team]?.[j] ?? null);
-        const at = k ?? (() => {
-          const open = spots.slice(0, count).findIndex((x) => !x);
-          return open >= 0 ? open : count;
-        })();
-        spots[at] = [Math.round(reading.spot[0] * 1e6) / 1e6, Math.round(reading.spot[1] * 1e6) / 1e6];
-        const strokes = at >= count ? h.strokes.map((v, j) => (j === cap ? Math.min(15, at + 1) : v)) : h.strokes;
-        const next = { ...h, strokes, spots: { ...h.spots, [team]: spots } };
-        return { ...d, holes: d.holes.map((x, j) => (j === index ? next : x)) };
-      });
-      setGpsError(null);
+      apply((await gps.read()).spot);
     } catch (e) {
-      setGpsError(e instanceof Error ? e.message : "Could not get a GPS fix.");
+      gps.setError(e instanceof Error ? e.message : "Could not get a GPS fix.");
     } finally {
       setMarking(null);
     }
   };
+
+  /** Captain's choice: marks where the team's next shot is hit from. */
+  const markShot = (index: number, team: Team, k?: number) =>
+    withFix(team, (spot) =>
+      setDraft((d) => {
+        const h = d.holes[index];
+        const cap = d.teams.indexOf(team);
+        const placed = placeSpot(h.spots?.[team], h.strokes[cap] ?? 0, spot, k);
+        const next = { ...h, strokes: h.strokes.map((v, j) => (j === cap ? placed.strokes : v)), spots: { ...h.spots, [team]: placed.spots } };
+        return { ...d, holes: d.holes.map((x, j) => (j === index ? next : x)) };
+      }),
+    );
+
+  /** Regular rounds: marks where one player's next shot is hit from. */
+  const markPlayerShot = (index: number, seat: number) =>
+    withFix(`seat${seat}`, (spot) =>
+      setDraft((d) => {
+        const h = d.holes[index];
+        const placed = placeSpot(h.seatSpots?.[seat], h.strokes[seat] ?? 0, spot);
+        const seatSpots = d.players.map((_, j) => (j === seat ? placed.spots : (h.seatSpots?.[j] ?? [])));
+        const next = { ...h, strokes: h.strokes.map((v, j) => (j === seat ? placed.strokes : v)), seatSpots };
+        return { ...d, holes: d.holes.map((x, j) => (j === index ? next : x)) };
+      }),
+    );
 
   if (!loaded) return <section className={styles.card} aria-busy="true" style={{ minHeight: 320 }} />;
 
@@ -473,6 +480,9 @@ export default function PointsScorecard({
                   bestBall: outcome.bestBall,
                   teamPoints: outcome.teamPoints,
                   ...(draft.scramble ? { shots: { black: shotsFor(draft.holes[i], "black"), white: shotsFor(draft.holes[i], "white") } } : {}),
+                  ...(!draft.scramble && names.some((_, seat) => seatSpotsFor(draft.holes[i], seat).some(Boolean))
+                    ? { seatSpots: names.map((_, seat) => seatSpotsFor(draft.holes[i], seat)) }
+                    : {}),
                   ...(draft.scramble && TEAMS.some((t) => spotsFor(draft.holes[i], t).some(Boolean))
                     ? { shotSpots: { black: spotsFor(draft.holes[i], "black"), white: spotsFor(draft.holes[i], "white") } }
                     : {}),
@@ -603,49 +613,34 @@ export default function PointsScorecard({
           </p>
         )}
 
-        {draft.scramble && (
-          <div className={styles.gpsBar}>
-            {gpsOn ? (
-              <>
-                {hole.green && fix ? (
-                  <span>
-                    <span className={styles.gpsBig}>{yardsBetween(fix.spot, hole.green)}</span> yds to green
-                  </span>
-                ) : (
-                  <span className={styles.muted}>{hole.green ? "Finding you…" : "GPS on. This hole isn't mapped yet."}</span>
-                )}
-                {fix && <small className={styles.muted}>±{Math.round(fix.accuracy / 0.9144)} yds</small>}
-                <button type="button" className={styles.textButton} onClick={() => setShowMap(!showMap)}>
-                  {showMap ? "Hide map" : "Show map"}
-                </button>
-                <button type="button" className={styles.textButton} onClick={() => setGpsOn(false)}>
-                  GPS off
-                </button>
-              </>
-            ) : (
-              <button type="button" className={styles.markButton} onClick={() => setGpsOn(true)}>
-                📍 Turn on GPS
-              </button>
-            )}
-          </div>
-        )}
-        {gpsError && <p className={styles.error}>{gpsError}</p>}
-        {draft.scramble && gpsOn && showMap && (
-          <HoleMap
-            tee={hole.tee}
-            green={hole.green}
-            me={fix?.spot}
-            height={260}
-            shots={TEAMS.flatMap((team) => {
-              const picks = shotsFor(entry, team);
-              return spotsFor(entry, team).flatMap((spot, k): MapShot[] =>
-                spot
-                  ? [{ spot, label: picks[k] !== null && picks[k] !== undefined ? names[picks[k]!].slice(0, 1).toUpperCase() : String(k + 1), color: team === "black" ? "#111827" : "#ffffff" }]
-                  : [],
-              );
-            })}
-          />
-        )}
+        <GpsPanel
+          gps={gps}
+          tee={hole.tee}
+          green={hole.green}
+          hint="Yards to the green, and mark where each shot is hit from."
+          shots={
+            draft.scramble
+              ? TEAMS.flatMap((team) => {
+                  const picks = shotsFor(entry, team);
+                  return spotsFor(entry, team).flatMap((spot, k): MapShot[] =>
+                    spot
+                      ? [
+                          {
+                            spot,
+                            label: picks[k] !== null && picks[k] !== undefined ? names[picks[k]!].slice(0, 1).toUpperCase() : String(k + 1),
+                            color: team === "black" ? "#111827" : "#ffffff",
+                          },
+                        ]
+                      : [],
+                  );
+                })
+              : names.flatMap((nm, seat) =>
+                  seatSpotsFor(entry, seat).flatMap((spot): MapShot[] =>
+                    spot ? [{ spot, label: nm.slice(0, 1).toUpperCase(), color: SEAT_COLORS[seat % SEAT_COLORS.length] }] : [],
+                  ),
+                )
+          }
+        />
         {draft.scramble && <span className={styles.wolfBadge}>Captain&apos;s choice: one score per team</span>}
         {rowSeats.map((seat) => {
           const name = rowName(seat);
@@ -667,6 +662,16 @@ export default function PointsScorecard({
                 >
                   Sand save
                 </button>
+                {!draft.scramble && gps.on && (
+                  <PlayerShots
+                    spots={seatSpotsFor(entry, seat)}
+                    green={hole.green}
+                    par={hole.par}
+                    busy={marking !== null}
+                    working={marking === `seat${seat}`}
+                    onMark={() => void markPlayerShot(i, seat)}
+                  />
+                )}
               </div>
               <div className={styles.stepper}>
                 <button type="button" aria-label={`One less stroke for ${name}`} onClick={() => setStroke(seat, -1)}>
@@ -687,7 +692,7 @@ export default function PointsScorecard({
             const spots = spotsFor(entry, team);
             const dist = shotYards(spots, hole.green);
             const members = names.map((_, seat) => seat).filter((seat) => teams[seat] === team);
-            if (!gpsOn && (!list.length || members.length < 2)) return null;
+            if (!gps.on && (!list.length || members.length < 2)) return null;
             const open = spots.findIndex((x) => !x);
             const nextShot = (open >= 0 ? open : list.length) + 1;
             const setShot = (k: number, seat: number) =>
@@ -699,7 +704,7 @@ export default function PointsScorecard({
                 <legend>
                   <TeamTag team={team} /> {members.length > 1 ? "Whose shot did you use?" : "Shots"}
                 </legend>
-                {gpsOn && (
+                {gps.on && (
                   <p style={{ margin: "4px 0 8px" }}>
                     <button
                       type="button"
@@ -862,5 +867,39 @@ function ShotsTable({ names, teams, stats }: { names: string[]; teams: Team[]; s
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** Regular rounds with GPS on: "Shot N from here" for one player, and their shot distances so far. */
+function PlayerShots({
+  spots,
+  green,
+  par,
+  busy,
+  working,
+  onMark,
+}: {
+  spots: (Spot | null)[];
+  green?: Spot | null;
+  par: number;
+  busy: boolean;
+  working: boolean;
+  onMark: () => void;
+}) {
+  const yds = shotYards(spots, green);
+  const open = spots.findIndex((x) => !x);
+  const next = (open >= 0 ? open : spots.length) + 1;
+  return (
+    <span style={{ display: "block", marginTop: 6 }}>
+      <button type="button" className={styles.markButton} style={{ padding: "3px 10px" }} disabled={busy} onClick={onMark}>
+        {working ? "Getting GPS…" : `📍 Shot ${next}`}
+      </button>
+      {spots.some(Boolean) && (
+        <small className={styles.spotOn} style={{ display: "block", whiteSpace: "normal" }}>
+          {yds.map((y, k) => `${k === 0 && par >= 4 ? "Drive " : ""}${y ?? (spots[k] ? "📍" : "–")}`).join(" · ")}
+          {yds.some((y) => y !== null) ? " yds" : ""}
+        </small>
+      )}
+    </span>
   );
 }

@@ -36,6 +36,7 @@ export type SavedHole = {
     teamPoints?: { black: number; white: number };
     shots?: { black?: (number | null)[]; white?: (number | null)[] }; // captain's choice: whose ball, shot by shot
     shotSpots?: { black?: ([number, number] | null)[]; white?: ([number, number] | null)[] }; // GPS: where each shot was hit from
+    seatSpots?: ([number, number] | null)[][]; // GPS, regular rounds: each player's own shots, by seat
   };
 };
 export type SavedRound = {

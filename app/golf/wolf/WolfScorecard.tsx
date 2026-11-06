@@ -6,6 +6,8 @@ import { isHoleComplete, scoreHole, sides, totals, wolfSeatFor, type HoleInput }
 import { money, settleWolf } from "../lib/settle";
 import PostRound from "../PostRound";
 import PlayerPicker from "../PlayerPicker";
+import GpsPanel from "../GpsPanel";
+import { useGps } from "../lib/useGps";
 import styles from "../golf.module.css";
 
 type HoleEntry = { strokes: (number | null)[]; partnerSeat: number | null; loneWolf: boolean; comment: string };
@@ -61,6 +63,7 @@ export default function WolfScorecard({
   // Today's bet: starts from the control panel, can be changed for this round only.
   const bet = draft.bet ?? settings.betPerPoint;
   const [loaded, setLoaded] = useState(false);
+  const gps = useGps(); // rangefinder: yards to the green
   const [error, setError] = useState<string | null>(null);
 
   // Restore an in-progress round (phone locked, dead zone, page reload...).
@@ -335,6 +338,7 @@ export default function WolfScorecard({
           </span>
         </div>
         {yards && <p className={styles.holeMeta}>{yards}</p>}
+        <GpsPanel gps={gps} tee={hole.tee} green={hole.green} hint="Yards to the green." />
         {!outcome && (
           <p className={styles.waiting} role="status">
             {[
