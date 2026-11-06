@@ -33,8 +33,10 @@ export default async function GolfLayout({ children }: Readonly<{ children: Reac
           <a href="/golf/leaderboard">Leaderboard</a>
           <a href="/golf/players">Players</a>
           <a href="/golf/stats">Stats</a>
-          <a className="nav-cta" href="/golf#games">
-            Start a round
+          <a href="/golf/me">Me</a>
+          <a className="nav-cta" href="/golf#games" aria-label="Start a round">
+            <span className={styles.longLabel}>Start a round</span>
+            <span className={styles.shortLabel}>Play</span>
           </a>
         </nav>
       </header>

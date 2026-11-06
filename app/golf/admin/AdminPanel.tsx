@@ -9,6 +9,8 @@ type Player = {
   name: string;
   nickname: string | null;
   tees: Tees | null;
+  hasLogin?: boolean;
+  codePending?: boolean;
   email: string | null;
   phone: string | null;
   handicap: number | null;
@@ -21,7 +23,14 @@ type Player = {
   points: number;
 };
 type AdminRound = { id: string; format: "wolf" | "points"; playedOn: string; course: string; submittedBy: string | null; players: string };
-type AdminData = { settings: GolfSettings & { groupPinSet?: boolean }; players: Player[]; unknownNames: string[]; rounds: AdminRound[] };
+type AdminData = {
+  settings: GolfSettings & { groupPinSet?: boolean };
+  players: Player[];
+  unknownNames: string[];
+  rounds: AdminRound[];
+  loginCode?: string; // only right after "Create sign-in code"
+  loginCodeFor?: string;
+};
 type Tab = "settings" | "players" | "rounds" | "pins";
 type PlayerForm = {
   id?: number;
@@ -353,6 +362,11 @@ export default function AdminPanel() {
                 <label className={styles.field}>
                   <span>Name (as used on the scorecard)</span>
                   <input className={styles.input} value={form.name} maxLength={40} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                  {form.id && form.name.trim() !== (data.players.find((x) => x.id === form.id)?.name ?? "") && (
+                    <small className={styles.muted}>
+                      Saving moves their posted rounds to the new name. If someone already played as that name, their rounds are combined.
+                    </small>
+                  )}
                 </label>
                 <label className={styles.field}>
                   <span>Nickname (optional)</span>
@@ -395,6 +409,18 @@ export default function AdminPanel() {
                 <span>Notes</span>
                 <textarea className={styles.textarea} maxLength={2000} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </label>
+              {form.id && (
+                <SignInBox
+                  player={data.players.find((x) => x.id === form.id)}
+                  code={data.loginCodeFor === form.name ? data.loginCode : undefined}
+                  busy={busy}
+                  onCode={() => call("login_code", { id: form.id }, pin)}
+                  onReset={() => {
+                    if (confirm(`Reset ${form.name}'s sign-in? Their PIN stops working and they're signed out everywhere.`))
+                      void call("reset_login", { id: form.id }, pin, `${form.name}'s sign-in was reset.`);
+                  }}
+                />
+              )}
               <label className={styles.checkRow}>
                 <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} />
                 <span>Active (shows in scorecard name suggestions)</span>
@@ -472,6 +498,7 @@ export default function AdminPanel() {
                         <td>
                           <strong>{p.name}</strong>
                           {p.nickname && <span className={styles.muted}> “{p.nickname}”</span>}
+                          {p.hasLogin && <span className={styles.muted}> · signed up</span>}
                           {p.rounds > 0 && (
                             <a className={styles.playerLink} style={{ marginLeft: 8, fontSize: "0.8rem" }} href={playerHref(p.name)} onClick={(e) => e.stopPropagation()}>
                               Profile
@@ -607,5 +634,65 @@ export default function AdminPanel() {
         </section>
       )}
     </div>
+  );
+}
+
+/** Player sign-in (/golf/me): create a one-time code to text them, or reset their PIN. */
+function SignInBox({
+  player,
+  code,
+  busy,
+  onCode,
+  onReset,
+}: {
+  player?: Player;
+  code?: string;
+  busy: boolean;
+  onCode: () => void;
+  onReset: () => void;
+}) {
+  const site = typeof window === "undefined" ? "" : window.location.origin;
+  const text = code && player ? `Golf Buddy sign-in: open ${site}/golf/me, enter your name (${player.name}) and code ${code}. Then pick your own PIN.` : "";
+  return (
+    <fieldset className={styles.betBox}>
+      <legend>Player sign-in</legend>
+      <p className={styles.muted} style={{ marginTop: 0 }}>
+        {player?.hasLogin
+          ? "Signed up: they sign in at /golf/me with their own PIN."
+          : player?.codePending
+            ? "Sign-in code sent, waiting for them to sign in and choose a PIN."
+            : "Not set up. Create a sign-in code and text it to them."}
+      </p>
+      {code && (
+        <div className={styles.notice}>
+          Sign-in code: <strong style={{ fontSize: "1.3rem", letterSpacing: 2 }}>{code}</strong>
+          <small style={{ display: "block", fontWeight: 400 }}>
+            Shown once. Good for 14 days. Text it to {player?.name}.
+          </small>
+          {text && (
+            <p style={{ display: "flex", gap: 12, flexWrap: "wrap", margin: "8px 0 0" }}>
+              {player?.phone && (
+                <a className="text-link" style={{ marginTop: 0 }} href={`sms:${player.phone}?&body=${encodeURIComponent(text)}`}>
+                  Text it
+                </a>
+              )}
+              <button type="button" className={styles.textButton} onClick={() => void navigator.clipboard?.writeText(text)}>
+                Copy message
+              </button>
+            </p>
+          )}
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+        <button type="button" className={styles.textButton} disabled={busy} onClick={onCode}>
+          {player?.hasLogin ? "Create a new sign-in code (forgot PIN)" : "Create sign-in code"}
+        </button>
+        {(player?.hasLogin || player?.codePending) && (
+          <button type="button" className={styles.textButton} disabled={busy} onClick={onReset}>
+            Reset sign-in
+          </button>
+        )}
+      </div>
+    </fieldset>
   );
 }

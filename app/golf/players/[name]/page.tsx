@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { formatDate, getPlayer, getPlayerStats, playerHref } from "../../lib/api";
+import { getMe } from "../../lib/me";
 import { getPin } from "../../lib/pin";
 import { TEAM_NAMES } from "../../lib/points";
 import { buildSkills, keyOf, shareIndex, TIER_LABEL } from "../../lib/skill";
@@ -21,9 +22,9 @@ async function load(raw: string) {
   const name = decode(raw);
   if (!name) return null;
   const pin = await getPin();
-  const [profile, stats] = await Promise.all([getPlayer(name, pin), getPlayerStats(pin)]);
+  const [profile, stats, me] = await Promise.all([getPlayer(name, pin), getPlayerStats(pin), getMe()]);
   if (!profile) return null;
-  return { profile, skill: buildSkills(stats).get(keyOf(profile.name)) ?? null };
+  return { profile, skill: buildSkills(stats).get(keyOf(profile.name)) ?? null, isMe: me ? keyOf(me.name) === keyOf(profile.name) : false, signedIn: Boolean(me) };
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ name: string }> }): Promise<Metadata> {
@@ -35,7 +36,7 @@ export async function generateMetadata({ params }: { params: Promise<{ name: str
 export default async function PlayerPage({ params }: { params: Promise<{ name: string }> }) {
   const data = await load((await params).name);
   if (!data) notFound();
-  const { profile: p, skill } = data;
+  const { profile: p, skill, isMe, signedIn } = data;
   const s = p.stats;
   const dots = p.formats.points;
   const wolf = p.formats.wolf;
@@ -70,6 +71,13 @@ export default async function PlayerPage({ params }: { params: Promise<{ name: s
           <p className={styles.lead}>
             Skill {skill.provisional ? "is still being worked out" : `level ${TIER_LABEL[skill.tier]}`}: {skill.basis}.
           </p>
+        )}
+        {(isMe || !signedIn) && (
+          <div className={styles.actions}>
+            <a className="button button-secondary" href="/golf/me">
+              {isMe ? "Edit my profile" : "Is this you? Sign in"}
+            </a>
+          </div>
         )}
       </section>
 
