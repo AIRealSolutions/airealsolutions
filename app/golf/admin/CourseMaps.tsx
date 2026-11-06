@@ -53,9 +53,12 @@ export default function CourseMaps({
     setPlace("tee");
     setNote(null);
     setLayout(Object.fromEntries((c?.holes ?? []).map((h) => [h.number, { tee: h.tee ?? null, green: h.green ?? null }])));
-    setSearch(c ? `${c.name.split("·")[0].trim()} golf, ${c.city ?? ""} ${c.state ?? ""}`.trim() : "");
+    const query = c ? `${c.name.split("·")[0].trim()} Golf Club, ${c.city ?? ""}, ${c.state ?? ""}` : "";
+    setSearch(query);
     const any = (c?.holes ?? []).find((h) => h.tee || h.green);
     setCenter(any ? (any.tee ?? any.green)! : null);
+    // Nothing mapped yet: find the course on the map so you can start placing pins from home.
+    if (c && !any) void find(query, c);
   };
 
   const course = courses.find((c) => c.id === courseId) ?? null;
@@ -68,17 +71,28 @@ export default function CourseMaps({
   };
   const neighbor = layout[hole - 1]?.green ?? layout[hole + 1]?.tee ?? null;
 
-  const find = async () => {
-    if (!search.trim()) return;
+  /** Centers the map on a place search (OpenStreetMap). Falls back to the course's town. */
+  const find = async (query = search, c = course) => {
+    if (!query.trim()) return;
     setWorking(true);
     setNote(null);
+    const lookup = async (q: string) => {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`);
+      return ((await res.json()) as { lat: string; lon: string }[])[0];
+    };
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(search)}`);
-      const hit = ((await res.json()) as { lat: string; lon: string }[])[0];
-      if (!hit) setNote("Not found. Try the course name and town, or use your location.");
-      else setCenter([Number(hit.lat), Number(hit.lon)]);
+      let hit = await lookup(query);
+      if (hit) {
+        setCenter([Number(hit.lat), Number(hit.lon)]);
+        setNote("Found the course. Zoom in on hole 1, tap its tee box, then the middle of its green. Or try “Import holes from OpenStreetMap” below.");
+      } else if (c?.city && (hit = await lookup(`${c.city}, ${c.state ?? ""}`))) {
+        setCenter([Number(hit.lat), Number(hit.lon)]);
+        setNote(`Couldn't find the course by name, so the map shows ${c.city}. Drag and zoom to the course, or type a better search above.`);
+      } else {
+        setNote("Not found. Type the course name and town above and tap Find.");
+      }
     } catch {
-      setNote("Search is unavailable right now.");
+      setNote("Search is unavailable right now. Drag and zoom the map to the course.");
     } finally {
       setWorking(false);
     }
@@ -202,6 +216,18 @@ export default function CourseMaps({
         {yds !== null ? ` · map ${yds} yds tee to green` : ""}
       </p>
 
+      <form
+        style={{ display: "flex", gap: 8, margin: "10px 0" }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          void find();
+        }}
+      >
+        <input className={styles.input} aria-label="Find a place on the map" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <button type="submit" className="button button-secondary" disabled={working}>
+          {working ? "…" : "Find"}
+        </button>
+      </form>
       <div className={styles.gpsBar}>
         <span className={styles.muted}>Tap places the</span>
         <button type="button" className={`${styles.chip} ${styles.chipSmall} ${place === "tee" ? styles.chipOn : ""}`} onClick={() => setPlace("tee")}>
@@ -211,6 +237,7 @@ export default function CourseMaps({
           Green
         </button>
       </div>
+      {note && <p className={styles.notice}>{note}</p>}
       <HoleMap
         editable
         tee={pins.tee}
@@ -224,7 +251,6 @@ export default function CourseMaps({
           if (place === "tee") setPlace("green");
         }}
       />
-      {note && <p className={styles.notice}>{note}</p>}
 
       <div className={styles.actions} style={{ marginTop: 8 }}>
         <button
@@ -271,15 +297,6 @@ export default function CourseMaps({
             </button>
           )}
         </p>
-        <label className={styles.field}>
-          <span>Find the course on the map</span>
-          <span style={{ display: "flex", gap: 8 }}>
-            <input className={styles.input} value={search} onChange={(e) => setSearch(e.target.value)} />
-            <button type="button" className="button button-secondary" disabled={working} onClick={() => void find()}>
-              Find
-            </button>
-          </span>
-        </label>
         <p>
           <button type="button" className={styles.textButton} disabled={working} onClick={() => void importOsm()}>
             Import holes from OpenStreetMap

@@ -109,7 +109,7 @@ export default function HoleMap({ tee, green, shots = [], me, center, height = 3
     if (key !== fitKey.current) {
       fitKey.current = key;
       const all = points.length ? points : me ? [me] : center ? [center] : [];
-      if (all.length === 1) m.setView(spot(all[0]), 17);
+      if (all.length === 1) m.setView(spot(all[0]), points.length ? 17 : 16); // a whole course: a bit wider
       else if (all.length > 1) m.fitBounds(L.latLngBounds(all.map(spot)), { padding: [28, 28], maxZoom: 19 });
     }
   }
