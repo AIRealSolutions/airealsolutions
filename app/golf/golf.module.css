@@ -685,3 +685,23 @@ a.bannerCard:hover {
 .playerLink:hover {
   text-decoration-color: var(--green);
 }
+@media (max-width: 440px) {
+  .golf .nav {
+    gap: 9px;
+    font-size: 0.78rem;
+  }
+  .golf .nav :global(.nav-cta) {
+    padding: 8px 10px;
+  }
+}
+.shortLabel {
+  display: none;
+}
+@media (max-width: 440px) {
+  .longLabel {
+    display: none;
+  }
+  .shortLabel {
+    display: inline;
+  }
+}
