@@ -15,6 +15,8 @@ export type Hole = {
   yardsWhite: number | null;
   yardsBlue: number | null;
   yardsBlack: number | null;
+  tee?: [number, number] | null; // GPS course map (control panel → Course maps)
+  green?: [number, number] | null;
 };
 export type Course = { id: number; name: string; city: string | null; state: string | null; par: number | null; holes: Hole[] };
 
@@ -33,6 +35,8 @@ export type SavedHole = {
     bestBall?: "black" | "white" | null;
     teamPoints?: { black: number; white: number };
     shots?: { black?: (number | null)[]; white?: (number | null)[] }; // captain's choice: whose ball, shot by shot
+    shotSpots?: { black?: ([number, number] | null)[]; white?: ([number, number] | null)[] }; // GPS: where each shot was hit from
+    seatSpots?: ([number, number] | null)[][]; // GPS, regular rounds: each player's own shots, by seat
   };
 };
 export type SavedRound = {

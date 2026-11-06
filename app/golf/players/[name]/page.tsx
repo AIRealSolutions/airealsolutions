@@ -49,6 +49,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ name: s
     ["Shots used", s && s.teamShots ? `${s.shotsUsed} of ${s.teamShots}` : "–"],
     ["Share of team shots", idx === null ? "–" : `${Math.round(idx * 100)}%`],
     ["Tee shots / holed", s && s.teamShots ? `${s.teeShots} / ${s.holedShots}` : "–"],
+    ["Drives (GPS)", s && s.drives ? `${s.avgDrive} avg · ${s.longestDrive} long` : "–"],
     ["Avg vs par (per hole)", s && s.holes ? `${s.overPar >= 0 ? "+" : ""}${(s.overPar / s.holes).toFixed(2)}` : "–"],
   ];
   const partners = p.partners.filter((x) => x.rounds > 0);

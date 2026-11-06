@@ -35,6 +35,8 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
     { label: "Most tee shots used", hit: leader(rows, (r) => r.teeShots), unit: "drives" },
     { label: "Most holed out", hit: leader(rows, (r) => r.holedShots), unit: "holed" },
     { label: "Most best balls", hit: leader(rows, (r) => r.bestBalls), unit: "holes" },
+    { label: "Longest drive", hit: leader(rows, (r) => r.longestDrive ?? 0), unit: "yds (GPS)" },
+    { label: "Best average drive", hit: leader(rows.filter((r) => (r.drives ?? 0) >= 3), (r) => r.avgDrive ?? 0), unit: "yds avg (3+ drives)" },
   ].filter((l) => l.hit);
   const href = (y: number) => `/golf/stats?year=${y}`;
 
@@ -98,6 +100,8 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
                   <th className={styles.num}>Tee</th>
                   <th className={styles.num}>Holed</th>
                   <th className={styles.num}>Best balls</th>
+                  <th className={styles.num}>Avg drive</th>
+                  <th className={styles.num}>Long</th>
                   <th className={styles.num}>Avg vs par</th>
                   <th className={styles.num}>Rounds</th>
                 </tr>
@@ -130,6 +134,8 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
                       <td className={styles.num}>{r.teeShots}</td>
                       <td className={styles.num}>{r.holedShots}</td>
                       <td className={styles.num}>{r.bestBalls}</td>
+                      <td className={styles.num}>{r.avgDrive ? `${r.avgDrive}` : "–"}</td>
+                      <td className={styles.num}>{r.longestDrive ? `${r.longestDrive}` : "–"}</td>
                       <td className={styles.num}>
                         {r.holes ? `${r.overPar >= 0 ? "+" : ""}${(r.overPar / r.holes).toFixed(2)}` : "–"}
                       </td>
