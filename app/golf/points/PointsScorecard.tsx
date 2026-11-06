@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Course, GolfSettings } from "../lib/api";
 import { money, settleDots } from "../lib/settle";
-import PostRound, { RosterList } from "../PostRound";
+import PostRound from "../PostRound";
+import PlayerPicker from "../PlayerPicker";
 import {
   nassauOf,
   TEAM_NAMES,
@@ -237,14 +238,12 @@ export default function PointsScorecard({
             <span>Players and teams (2 to 8). Tap the team to switch.</span>
             {names.map((name, i) => (
               <div className={styles.playerRow} key={i}>
-                <input
-                  className={styles.input}
-                  placeholder={`Player ${i + 1}`}
+                <PlayerPicker
+                  label={`Player ${i + 1}`}
                   value={name}
-                  maxLength={40}
-                  autoComplete="off"
-                  list="golf-roster"
-                  onChange={(e) => update({ players: names.map((p, j) => (j === i ? e.target.value : p)) })}
+                  roster={roster}
+                  taken={names.filter((_, j) => j !== i)}
+                  onChange={(value) => update({ players: names.map((p, j) => (j === i ? value : p)) })}
                 />
                 <button
                   type="button"
@@ -266,7 +265,6 @@ export default function PointsScorecard({
                 )}
               </div>
             ))}
-            <RosterList names={roster} />
             <p style={{ display: "flex", gap: 16, margin: 0 }}>
               {n < 8 && (
                 <button

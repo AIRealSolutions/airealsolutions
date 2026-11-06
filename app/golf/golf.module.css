@@ -705,3 +705,18 @@ a.bannerCard:hover {
     display: inline;
   }
 }
+.pickerCustom {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+.pickerCustom .input {
+  flex: 1;
+  min-width: 0;
+}
+.playerRow > .select {
+  flex: 1;
+  min-width: 0;
+}

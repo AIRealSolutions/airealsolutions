@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { Course, GolfSettings } from "../lib/api";
 import { isHoleComplete, scoreHole, sides, totals, wolfSeatFor, type HoleInput } from "../lib/wolf";
 import { money, settleWolf } from "../lib/settle";
-import PostRound, { RosterList } from "../PostRound";
+import PostRound from "../PostRound";
+import PlayerPicker from "../PlayerPicker";
 import styles from "../golf.module.css";
 
 type HoleEntry = { strokes: (number | null)[]; partnerSeat: number | null; loneWolf: boolean; comment: string };
@@ -145,14 +146,12 @@ export default function WolfScorecard({
             <span>Players in tee order (3 to 5)</span>
             {names.map((name, i) => (
               <div className={styles.playerRow} key={i}>
-                <input
-                  className={styles.input}
-                  placeholder={`Player ${i + 1}`}
+                <PlayerPicker
+                  label={`Player ${i + 1}`}
                   value={name}
-                  maxLength={40}
-                  autoComplete="off"
-                  list="golf-roster"
-                  onChange={(e) => update({ players: names.map((p, j) => (j === i ? e.target.value : p)) })}
+                  roster={roster}
+                  taken={names.filter((_, j) => j !== i)}
+                  onChange={(value) => update({ players: names.map((p, j) => (j === i ? value : p)) })}
                 />
                 {n > 3 && (
                   <button
@@ -166,7 +165,6 @@ export default function WolfScorecard({
                 )}
               </div>
             ))}
-            <RosterList names={roster} />
             {n < 5 && (
               <button type="button" className={styles.textButton} onClick={() => update({ players: [...names, ""] })}>
                 + Add a player
