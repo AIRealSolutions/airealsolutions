@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { formatDate, golfRpc, normalizeSettings, playerHref, type GolfSettings, type Tees } from "../lib/api";
+import CourseMaps from "./CourseMaps";
 import styles from "../golf.module.css";
 
 type Player = {
@@ -31,7 +32,7 @@ type AdminData = {
   loginCode?: string; // only right after "Create sign-in code"
   loginCodeFor?: string;
 };
-type Tab = "settings" | "players" | "rounds" | "pins";
+type Tab = "settings" | "players" | "maps" | "rounds" | "pins";
 type PlayerForm = {
   id?: number;
   name: string;
@@ -221,6 +222,7 @@ export default function AdminPanel() {
   const tabs: [Tab, string][] = [
     ["settings", "Bets & games"],
     ["players", `Players (${data.players.length})`],
+    ["maps", "Course maps"],
     ["rounds", "Rounds"],
     ["pins", "PINs"],
   ];
@@ -559,6 +561,10 @@ export default function AdminPanel() {
             </section>
           )}
         </>
+      )}
+
+      {tab === "maps" && (
+        <CourseMaps pin={pin} busy={busy} save={(courseId, holes, label) => call("save_layout", { courseId, holes }, pin, label)} />
       )}
 
       {tab === "rounds" && (

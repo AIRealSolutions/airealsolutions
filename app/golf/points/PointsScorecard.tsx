@@ -28,6 +28,8 @@ import {
   type PlayerStat,
   type ShotLog,
 } from "../lib/skill";
+import { currentFix, shotYards, yardsBetween, type Fix, type Spot, type SpotLog } from "../lib/geo";
+import HoleMap, { type MapShot } from "../HoleMap";
 import styles from "../golf.module.css";
 
 type HoleEntry = {
@@ -36,6 +38,7 @@ type HoleEntry = {
   closest: number | null;
   comment: string;
   shots?: ShotLog; // captain's choice: whose ball the team used, shot by shot
+  spots?: SpotLog; // GPS: where each of those shots was hit from
 };
 type RoundBet = { front: number; back: number; total: number; perDot: number };
 type DotRules = GolfSettings["games"]["points"]["rules"];
@@ -131,8 +134,64 @@ export default function PointsScorecard({
     const list = h.shots?.[team] ?? [];
     return Array.from({ length: count }, (_, k) => list[k] ?? null);
   };
+  const spotsFor = (h: HoleEntry, team: Team): (Spot | null)[] => {
+    const count = h.strokes[captains[team]] ?? 0;
+    const list = h.spots?.[team] ?? [];
+    return Array.from({ length: count }, (_, k) => list[k] ?? null);
+  };
   const updateHole = (index: number, patch: Partial<HoleEntry>) =>
     setDraft((d) => ({ ...d, holes: d.holes.map((h, i) => (i === index ? { ...h, ...patch } : h)) }));
+
+  // GPS: live position while turned on (rangefinder + quick shot marking).
+  const [gpsOn, setGpsOn] = useState(false);
+  const [fix, setFix] = useState<Fix | null>(null);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+  const [marking, setMarking] = useState<Team | null>(null);
+  const [showMap, setShowMap] = useState(true);
+  useEffect(() => {
+    if (!gpsOn) return;
+    if (!navigator.geolocation) {
+      setGpsError("This phone has no GPS in the browser.");
+      return;
+    }
+    const id = navigator.geolocation.watchPosition(
+      (p) => {
+        setGpsError(null);
+        setFix({ spot: [p.coords.latitude, p.coords.longitude], accuracy: Math.round(p.coords.accuracy), at: Date.now() });
+      },
+      (e) => setGpsError(e.code === e.PERMISSION_DENIED ? "Location is blocked. Allow location for this site in your browser settings." : "Waiting for GPS…"),
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 },
+    );
+    return () => navigator.geolocation.clearWatch(id);
+  }, [gpsOn]);
+
+  /** Marks where a team's shot is hit from: shot k, or the next unmarked one (adding a stroke if needed). */
+  const markShot = async (index: number, team: Team, k?: number) => {
+    setMarking(team);
+    try {
+      const reading = fix && Date.now() - fix.at < 10000 ? fix : await currentFix();
+      setGpsOn(true);
+      setDraft((d) => {
+        const h = d.holes[index];
+        const cap = d.teams.indexOf(team);
+        const count = h.strokes[cap] ?? 0;
+        const spots = Array.from({ length: Math.max(count, (h.spots?.[team] ?? []).length) }, (_, j) => h.spots?.[team]?.[j] ?? null);
+        const at = k ?? (() => {
+          const open = spots.slice(0, count).findIndex((x) => !x);
+          return open >= 0 ? open : count;
+        })();
+        spots[at] = [Math.round(reading.spot[0] * 1e6) / 1e6, Math.round(reading.spot[1] * 1e6) / 1e6];
+        const strokes = at >= count ? h.strokes.map((v, j) => (j === cap ? Math.min(15, at + 1) : v)) : h.strokes;
+        const next = { ...h, strokes, spots: { ...h.spots, [team]: spots } };
+        return { ...d, holes: d.holes.map((x, j) => (j === index ? next : x)) };
+      });
+      setGpsError(null);
+    } catch (e) {
+      setGpsError(e instanceof Error ? e.message : "Could not get a GPS fix.");
+    } finally {
+      setMarking(null);
+    }
+  };
 
   if (!loaded) return <section className={styles.card} aria-busy="true" style={{ minHeight: 320 }} />;
 
@@ -414,6 +473,9 @@ export default function PointsScorecard({
                   bestBall: outcome.bestBall,
                   teamPoints: outcome.teamPoints,
                   ...(draft.scramble ? { shots: { black: shotsFor(draft.holes[i], "black"), white: shotsFor(draft.holes[i], "white") } } : {}),
+                  ...(draft.scramble && TEAMS.some((t) => spotsFor(draft.holes[i], t).some(Boolean))
+                    ? { shotSpots: { black: spotsFor(draft.holes[i], "black"), white: spotsFor(draft.holes[i], "white") } }
+                    : {}),
                 },
                 comment: draft.holes[i].comment.trim(),
               };
@@ -541,6 +603,49 @@ export default function PointsScorecard({
           </p>
         )}
 
+        {draft.scramble && (
+          <div className={styles.gpsBar}>
+            {gpsOn ? (
+              <>
+                {hole.green && fix ? (
+                  <span>
+                    <span className={styles.gpsBig}>{yardsBetween(fix.spot, hole.green)}</span> yds to green
+                  </span>
+                ) : (
+                  <span className={styles.muted}>{hole.green ? "Finding you…" : "GPS on. This hole isn't mapped yet."}</span>
+                )}
+                {fix && <small className={styles.muted}>±{Math.round(fix.accuracy / 0.9144)} yds</small>}
+                <button type="button" className={styles.textButton} onClick={() => setShowMap(!showMap)}>
+                  {showMap ? "Hide map" : "Show map"}
+                </button>
+                <button type="button" className={styles.textButton} onClick={() => setGpsOn(false)}>
+                  GPS off
+                </button>
+              </>
+            ) : (
+              <button type="button" className={styles.markButton} onClick={() => setGpsOn(true)}>
+                📍 Turn on GPS
+              </button>
+            )}
+          </div>
+        )}
+        {gpsError && <p className={styles.error}>{gpsError}</p>}
+        {draft.scramble && gpsOn && showMap && (
+          <HoleMap
+            tee={hole.tee}
+            green={hole.green}
+            me={fix?.spot}
+            height={260}
+            shots={TEAMS.flatMap((team) => {
+              const picks = shotsFor(entry, team);
+              return spotsFor(entry, team).flatMap((spot, k): MapShot[] =>
+                spot
+                  ? [{ spot, label: picks[k] !== null && picks[k] !== undefined ? names[picks[k]!].slice(0, 1).toUpperCase() : String(k + 1), color: team === "black" ? "#111827" : "#ffffff" }]
+                  : [],
+              );
+            })}
+          />
+        )}
         {draft.scramble && <span className={styles.wolfBadge}>Captain&apos;s choice: one score per team</span>}
         {rowSeats.map((seat) => {
           const name = rowName(seat);
@@ -579,8 +684,12 @@ export default function PointsScorecard({
         {draft.scramble &&
           TEAMS.map((team) => {
             const list = shotsFor(entry, team);
+            const spots = spotsFor(entry, team);
+            const dist = shotYards(spots, hole.green);
             const members = names.map((_, seat) => seat).filter((seat) => teams[seat] === team);
-            if (!list.length || members.length < 2) return null;
+            if (!gpsOn && (!list.length || members.length < 2)) return null;
+            const open = spots.findIndex((x) => !x);
+            const nextShot = (open >= 0 ? open : list.length) + 1;
             const setShot = (k: number, seat: number) =>
               updateHole(i, {
                 shots: { ...entry.shots, [team]: list.map((v, j) => (j === k ? (v === seat ? null : seat) : v)) },
@@ -588,11 +697,34 @@ export default function PointsScorecard({
             return (
               <fieldset key={team} className={styles.shotBox}>
                 <legend>
-                  <TeamTag team={team} /> Whose shot did you use?
+                  <TeamTag team={team} /> {members.length > 1 ? "Whose shot did you use?" : "Shots"}
                 </legend>
+                {gpsOn && (
+                  <p style={{ margin: "4px 0 8px" }}>
+                    <button
+                      type="button"
+                      className={styles.markButton}
+                      disabled={marking !== null}
+                      onClick={() => void markShot(i, team)}
+                    >
+                      {marking === team ? "Getting GPS…" : `📍 Shot ${nextShot} from here`}
+                    </button>
+                  </p>
+                )}
                 {list.map((picked, k) => (
                   <div className={styles.shotRow} key={k}>
-                    <span>{shotLabel(k, list.length, hole.par)}</span>
+                    <span>
+                      {shotLabel(k, list.length, hole.par)}
+                      {dist[k] !== null ? (
+                        <small className={styles.spotOn} style={{ display: "block" }}>
+                          {dist[k]} yds
+                        </small>
+                      ) : spots[k] ? (
+                        <small className={styles.spotOn} style={{ display: "block" }}>
+                          📍
+                        </small>
+                      ) : null}
+                    </span>
                     <div className={styles.chips} style={{ margin: 0 }}>
                       {members.map((seat) => (
                         <button

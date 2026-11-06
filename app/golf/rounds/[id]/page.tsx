@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { formatDate, golfRead, type SavedRound } from "../../lib/api";
+import { formatDate, golfRead, type Course, type SavedRound } from "../../lib/api";
+import { shotYards, type Spot } from "../../lib/geo";
 import { getPin } from "../../lib/pin";
 import { TEAM_NAMES, nassauOf, scoreLabel, type Team } from "../../lib/points";
 import { money, settleDots, settleWolf } from "../../lib/settle";
 import { roundShotStats } from "../../lib/skill";
 import ShareButton from "./ShareButton";
+import ShotMap, { type ShotMapHole } from "./ShotMap";
 import styles from "../../golf.module.css";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -82,6 +84,32 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
   const shotStats = scramble ? roundShotStats(round.holes, bySeat.map((p) => p.seat)) : [];
   const shotsTracked = shotStats.some((s) => s.used > 0);
   const topShots = Math.max(0, ...shotStats.map((s) => s.used));
+
+  // GPS: where shots were hit from (captain's choice), measured against the course map.
+  const hasSpots = scramble && round.holes.some((h) => Object.values(h.extras?.shotSpots ?? {}).some((l) => l?.some(Boolean)));
+  const courseHoles = hasSpots
+    ? ((await golfRead<Course[]>("golf_courses", { p_pin: await getPin() }, [], 300)).find((c) => c.id === round.course.id)?.holes ?? [])
+    : [];
+  const greenOf = (n: number) => (courseHoles.find((x) => x.number === n)?.green ?? null) as Spot | null;
+  const drives: { seat: number; yds: number; hole: number }[] = [];
+  const mapHoles: ShotMapHole[] = [];
+  if (hasSpots) {
+    for (const h of round.holes) {
+      const teams: ShotMapHole["teams"] = {};
+      for (const team of ["black", "white"] as Team[]) {
+        const spots = (h.extras?.shotSpots?.[team] ?? []) as (Spot | null)[];
+        const who = h.extras?.shots?.[team] ?? [];
+        if (!spots.some(Boolean)) continue;
+        teams[team] = { spots, who: spots.map((_, k) => (who[k] === null || who[k] === undefined ? "" : name(who[k]))) };
+        const yds = shotYards(spots, greenOf(h.number))[0];
+        if (h.par >= 4 && yds !== null && yds >= 30 && yds <= 450 && who[0] !== null && who[0] !== undefined)
+          drives.push({ seat: who[0]!, yds, hole: h.number });
+      }
+      const c = courseHoles.find((x) => x.number === h.number);
+      if (Object.keys(teams).length) mapHoles.push({ number: h.number, par: h.par, tee: (c?.tee ?? null) as Spot | null, green: greenOf(h.number), teams });
+    }
+  }
+  const longest = drives.sort((a, b) => b.yds - a.yds)[0];
   const payoutBySeat = new Map<number, number>();
   if (hasMoney) {
     const amounts = dots ? dots.perPlayer : settleWolf(bySeat.map((p) => p.points), bet);
@@ -196,6 +224,12 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
             <strong>
               Most shots used: {shotStats.filter((s) => s.used === topShots).map((s) => name(s.seat)).join(" & ")} ({topShots})
             </strong>
+            {longest && (
+              <>
+                {" "}
+                · <strong>Longest drive: {name(longest.seat)}, {longest.yds} yds</strong> (hole {longest.hole})
+              </>
+            )}
           </p>
           <div className={styles.tableScroll}>
             <table className={styles.table}>
@@ -223,6 +257,13 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
               </tbody>
             </table>
           </div>
+        </section>
+      )}
+
+      {mapHoles.length > 0 && (
+        <section className={styles.card}>
+          <h2>Shot map</h2>
+          <ShotMap holes={mapHoles} />
         </section>
       )}
 
@@ -275,8 +316,11 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
                       const sand = isPoints && ex.sandSaves?.includes(p.seat);
                       const closest = isPoints && ex.closest === p.seat;
                       const shots = scramble && p.team ? (ex.shots?.[p.team] ?? []) : [];
+                      const yds = scramble && p.team ? shotYards((ex.shotSpots?.[p.team] ?? []) as (Spot | null)[], greenOf(h.number)) : [];
                       const shotLine = shots.some((x) => x !== null && x !== undefined)
-                        ? shots.map((x) => (x === null || x === undefined ? "–" : name(x).split(" ")[0])).join(" → ")
+                        ? shots
+                            .map((x, k) => `${x === null || x === undefined ? "–" : name(x).split(" ")[0]}${yds[k] ? ` ${yds[k]}y` : ""}`)
+                            .join(" → ")
                         : "";
                       return (
                         <td key={p.seat} className={styles.num}>

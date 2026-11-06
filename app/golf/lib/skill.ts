@@ -21,6 +21,9 @@ export type PlayerStat = {
   teamShots: number;
   teeShots: number;
   holedShots: number;
+  drives?: number; // GPS-measured drives (captain's choice, par 4s and 5s)
+  avgDrive?: number | null;
+  longestDrive?: number | null;
   handicap: number | string | null;
 };
 
