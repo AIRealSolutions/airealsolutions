@@ -15,10 +15,10 @@ This plan picks up where `docs/factory-assembly-line.md` stops. That document se
 |---|---|
 | Guided onboarding (`app/build/ProjectBuilder.tsx`) | Working; drafts kept in browser storage |
 | Save to Factory (`FactorySavePanel.tsx`) | Working, but `factory_intake_answers` has **0 rows** in Supabase, so no real intake has gone through yet |
-| Product synthesis (`ProductSynthesisPanel.tsx`) | Template-based (`make()` splits text on commas). **No LLM yet.** `factory_product_syntheses` has 0 rows |
+| Product synthesis (`ProductSynthesisPanel.tsx`) | **Spec Agent built (2026-11-10)**: "Generate with AI" calls `POST /api/factory/synthesis`. Template `make()` kept as "Template draft" and as the fallback when the server has no keys |
 | Architecture, economics, assembly-line records | Working, template-based |
-| `factory_agent_runs`, `factory_credit_ledger`, `factory_assembly_stages` | Tables exist; nothing uses agent runs yet |
-| LLM calls, code generation, build/check loop, preview, graduation | **Not built** |
+| `factory_agent_runs`, `factory_credit_ledger`, `factory_assembly_stages` | Tables exist; the Spec Agent records its runs and credits here |
+| Code generation, build/check loop, preview, graduation | **Not built** |
 
 All Factory database calls today come from the browser using the publishable key plus the user's session. That works for CRUD. Anything that holds a secret (LLM key, GitHub token, Vercel token, Supabase management token) has to run **server-side only**: Next.js route handlers or a background worker on Vercel, never in the browser.
 
@@ -56,6 +56,15 @@ Onboarding answers
 - Output goes into `factory_product_syntheses` (versioned) and is logged in `factory_agent_runs` (model, tokens, cost, duration). Credits are reserved before the call and settled after it.
 - The existing template `make()` stays as the fallback when the LLM call fails.
 - Gate: a human approves the synthesis, as the current button already does.
+
+**Built (2026-11-10).** How it works now:
+- Files: `app/api/factory/synthesis/route.ts` (route), `app/lib/agents/spec-agent.ts` (prompt, JSON schema, Claude call, cost), `docs/factory-agent-runs.sql` (credit functions, applied as migration `factory_agent_run_credits`).
+- Model: picked by `factory_resolve_model(project, 'synthesis', 'factory_manager', 'product_synthesis')`, so an assignment in `factory_model_assignments` overrides it. Today the catalog default is Claude Sonnet 5.5. A non-Anthropic pick, or a routing error, falls back to Claude Opus 5.5. Adaptive thinking, effort `high` unless the assignment sets one, structured JSON output, and server-side refusal fallback (`fallbacks: "default"`).
+- Context sent: project record, every intake answer, latest build brief, economics, selected add-ons, the add-on catalog, and the previous synthesis (for regenerations). Customer text is marked as data, not instructions.
+- Credits: `factory_agent_specialties.default_credit_estimate` for `factory_manager` (150) × the model's `credit_multiplier`. `factory_agent_run_reserve` (run as the user) checks access and balance and opens the run. `factory_agent_run_settle` (service role only) charges on success and refunds in full on failure. Settling twice is a no-op.
+- Output: a **draft** row in `factory_product_syntheses` (`source: "spec_agent"`, model, `agent_run_id`), an audit event `synthesis.generated`, and token counts and estimated USD cost on the `factory_agent_runs` row. Approving a draft marks it `approved` and older approved versions `superseded`.
+- Server env vars (Vercel): `ANTHROPIC_API_KEY` and `SUPABASE_SECRET_KEY` (the project's secret key; `SUPABASE_SERVICE_ROLE_KEY` also works). Without both, `GET /api/factory/synthesis` reports `configured: false` and the panel shows only the template.
+- Known gap: if the server dies mid-call, the run stays `running` and its credits stay reserved. A sweep that refunds runs stuck for more than 10 minutes belongs with the build worker (step 3b).
 
 ### 2. Site Spec: what the basic site contains
 Before writing code, a second LLM call turns the approved synthesis into a small, strict **Site Spec** (JSON):
