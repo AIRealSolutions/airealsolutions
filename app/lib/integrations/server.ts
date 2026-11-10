@@ -53,7 +53,32 @@ export async function userRest<T = unknown>(user: FactoryUser, path: string, ini
   });
   const text = await r.text();
   const data = text ? JSON.parse(text) : null;
-  if (!r.ok) throw new HttpError(r.status >= 500 ? 502 : 400, data?.message || "Database request failed.");
+  if (!r.ok) throw new HttpError(restStatus(r.status, data?.code), data?.message || "Database request failed.");
+  return data as T;
+}
+
+/** P0402 is raised by factory_agent_run_reserve when the wallet is short. */
+const restStatus = (status: number, code?: string) => (status >= 500 ? 502 : code === "P0402" ? 402 : 400);
+
+/**
+ * Call an RPC as service_role, using the server-only SUPABASE_SECRET_KEY (or the legacy
+ * SUPABASE_SERVICE_ROLE_KEY). Only for functions that browsers must never call, such as
+ * settling an agent run's credits.
+ */
+export async function serviceRpc<T = unknown>(fn: string, args: object): Promise<T> {
+  const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) throw new HttpError(503, "SUPABASE_SECRET_KEY is not configured on the server.");
+  const headers: Record<string, string> = { apikey: key, "Content-Type": "application/json" };
+  if (key.startsWith("ey")) headers.Authorization = `Bearer ${key}`; // legacy JWT service_role key
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: "POST",
+    cache: "no-store",
+    headers,
+    body: JSON.stringify(args),
+  });
+  const text = await r.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!r.ok) throw new HttpError(restStatus(r.status, data?.code), data?.message || "Database request failed.");
   return data as T;
 }
 

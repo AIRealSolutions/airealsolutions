@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.7.0",
     "leaflet": "^1.9.4",
     "next": "16.4.5",
     "react": "19.2.0",
