@@ -58,7 +58,22 @@ Generate one (`openssl rand -base64 48`) and add it to Vercel as `INTEGRATIONS_E
 - **Vercel**: Account Settings → Tokens. Save as `VERCEL_TOKEN`; if projects are under a team, also set `VERCEL_TEAM_ID`.
 - **Supabase**: https://supabase.com/dashboard/account/tokens. Save as `SUPABASE_ACCESS_TOKEN`.
 
-Redeploy after adding environment variables.
+### 4. Spec Agent (AI Product Synthesis)
+- **Anthropic**: an API key from console.anthropic.com. Save as `ANTHROPIC_API_KEY`.
+- **Supabase secret key**: Supabase → AIrealsolutions.com → Settings → API Keys → secret key. Save as `SUPABASE_SECRET_KEY` (sensitive). The server needs it to settle agent-run credits.
+- Check: `GET https://airealsolutions.com/api/factory/synthesis` returns `{"configured":true}` once both are set and deployed.
+
+### All server environment variables
+| Variable | Used by |
+|---|---|
+| `INTEGRATIONS_ENCRYPTION_KEY` | Encrypting stored Google tokens and database passwords |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Gmail and Calendar |
+| `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_TEMPLATE_REPO` (optional) | Connections page, project repos |
+| `VERCEL_TOKEN`, `VERCEL_TEAM_ID` (if using a team) | Connections page, project hosting |
+| `SUPABASE_ACCESS_TOKEN`, `SUPABASE_ORG_SLUG` (optional) | Connections page, project databases |
+| `ANTHROPIC_API_KEY`, `SUPABASE_SECRET_KEY` | Spec Agent |
+
+Redeploy after adding environment variables. A new variable only takes effect on the next deployment.
 
 ## API routes (all need `Authorization: Bearer <Factory session token>`)
 | Route | Purpose |
