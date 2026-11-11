@@ -760,3 +760,148 @@ a.bannerCard:hover {
   font-size: 0.78rem;
   white-space: nowrap;
 }
+
+/* Round recap: MVP, grades, awards, play by play */
+.mvp {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  border: 1px solid #fde68a;
+  color: #451a03;
+  border-radius: 20px;
+  padding: 18px 22px;
+  margin-bottom: 20px;
+}
+.mvp h2 {
+  font-size: 1.5rem;
+  margin: 0 0 2px;
+}
+.mvp p {
+  margin: 0;
+}
+.mvpTrophy {
+  font-size: 2.6rem;
+  line-height: 1;
+}
+.mvpLabel {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.grade {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 1.05rem;
+  vertical-align: middle;
+  flex: none;
+}
+.gradeA {
+  background: #dcfce7;
+  color: #166534;
+}
+.gradeB {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.gradeC {
+  background: #fef3c7;
+  color: #92400e;
+}
+.gradeD {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.gradeList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.gradeList li {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.gradeList li:first-child {
+  border-top: 0;
+}
+.gradeList p {
+  margin: 2px 0 0;
+  font-size: 0.9rem;
+}
+.subhead {
+  font-size: 1rem;
+  margin: 18px 0 10px;
+}
+.awards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.award {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+.award > span {
+  font-size: 1.6rem;
+}
+.award small,
+.award strong {
+  display: block;
+}
+.award small:first-child {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+}
+.feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.feed li {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.feed li:first-child {
+  border-top: 0;
+}
+.feed p {
+  margin: 2px 0 0;
+}
+.feedIcon {
+  font-size: 1.4rem;
+  width: 32px;
+  text-align: center;
+  flex: none;
+}
+.feedBig strong {
+  color: var(--green);
+}
+.feedMore {
+  margin-top: 10px;
+}
+.feedMore summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--green);
+  padding: 6px 0;
+}

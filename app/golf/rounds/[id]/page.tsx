@@ -6,6 +6,8 @@ import { getPin } from "../../lib/pin";
 import { TEAM_NAMES, nassauOf, scoreLabel, type Team } from "../../lib/points";
 import { money, settleDots, settleWolf } from "../../lib/settle";
 import { roundShotStats } from "../../lib/skill";
+import { buildRecap } from "../../lib/recap";
+import RoundRecap from "./RoundRecap";
 import ShareButton from "./ShareButton";
 import ShotMap, { type ShotMapHole, type ShotTrack } from "./ShotMap";
 import { SEAT_COLORS } from "../../GpsPanel";
@@ -127,6 +129,7 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
       if (tracks.length) mapHoles.push({ number: h.number, par: h.par, tee: (c?.tee ?? null) as Spot | null, green: greenOf(h.number), tracks });
     }
   }
+  const recap = buildRecap(round, drives);
   const longest = drives.sort((a, b) => b.yds - a.yds)[0];
   const payoutBySeat = new Map<number, number>();
   if (hasMoney) {
@@ -161,6 +164,8 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
           ))}
         </div>
       )}
+
+      <RoundRecap recap={recap} />
 
       {dots && (
         <section className={styles.card}>
