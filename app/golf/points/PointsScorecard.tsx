@@ -32,6 +32,7 @@ import { shotYards, type Spot, type SpotLog } from "../lib/geo";
 import { useGps } from "../lib/useGps";
 import type { MapShot } from "../HoleMap";
 import GpsPanel, { SEAT_COLORS } from "../GpsPanel";
+import LiveTicker from "../LiveTicker";
 import styles from "../golf.module.css";
 
 type HoleEntry = {
@@ -443,55 +444,57 @@ export default function PointsScorecard({
     );
   }
 
+  const completed = holeInputs.map((h, i) => ({ h, i })).filter(({ h }) => isPointsHoleComplete(h));
+  const buildPayload = () =>
+    completed.length
+      ? {
+          format: "points",
+          courseId: course.id,
+          playedOn: draft.playedOn,
+          submittedBy: draft.submittedBy,
+          settings: {
+            format: "points",
+            rules: {
+              ...rules,
+              nassauFront: nassau.front,
+              nassauBack: nassau.back,
+              nassauTotal: nassau.total,
+              betPerPoint: bet,
+              scramble: draft.scramble ? 1 : 0,
+            },
+            betPerPoint: bet,
+          },
+          players: names,
+          teams,
+          holes: completed.map(({ h, i }) => {
+            const outcome = scorePointsHole(h, rules)!;
+            return {
+              number: course.holes[i].number,
+              par: course.holes[i].par,
+              strokes: draft.scramble ? h.strokes.map((_, seat) => h.strokes[captains[teams[seat]]]) : h.strokes,
+              points: outcome.points,
+              extras: {
+                sandSaves: h.sandSaves.flatMap((on, seat) => (on ? [seat] : [])),
+                closest: h.closest,
+                bestBall: outcome.bestBall,
+                teamPoints: outcome.teamPoints,
+                ...(draft.scramble ? { shots: { black: shotsFor(draft.holes[i], "black"), white: shotsFor(draft.holes[i], "white") } } : {}),
+                ...(!draft.scramble && names.some((_, seat) => seatSpotsFor(draft.holes[i], seat).some(Boolean))
+                  ? { seatSpots: names.map((_, seat) => seatSpotsFor(draft.holes[i], seat)) }
+                  : {}),
+                ...(draft.scramble && TEAMS.some((t) => spotsFor(draft.holes[i], t).some(Boolean))
+                  ? { shotSpots: { black: spotsFor(draft.holes[i], "black"), white: spotsFor(draft.holes[i], "white") } }
+                  : {}),
+              },
+              comment: draft.holes[i].comment.trim(),
+            };
+          }),
+        }
+      : "Finish at least one hole before posting the round.";
+
+
   /* ---------- Review & submit ---------- */
   if (draft.phase === "review") {
-    const completed = holeInputs.map((h, i) => ({ h, i })).filter(({ h }) => isPointsHoleComplete(h));
-    const buildPayload = () =>
-      completed.length
-        ? {
-            format: "points",
-            courseId: course.id,
-            playedOn: draft.playedOn,
-            submittedBy: draft.submittedBy,
-            settings: {
-              format: "points",
-              rules: {
-                ...rules,
-                nassauFront: nassau.front,
-                nassauBack: nassau.back,
-                nassauTotal: nassau.total,
-                betPerPoint: bet,
-                scramble: draft.scramble ? 1 : 0,
-              },
-              betPerPoint: bet,
-            },
-            players: names,
-            teams,
-            holes: completed.map(({ h, i }) => {
-              const outcome = scorePointsHole(h, rules)!;
-              return {
-                number: course.holes[i].number,
-                par: course.holes[i].par,
-                strokes: draft.scramble ? h.strokes.map((_, seat) => h.strokes[captains[teams[seat]]]) : h.strokes,
-                points: outcome.points,
-                extras: {
-                  sandSaves: h.sandSaves.flatMap((on, seat) => (on ? [seat] : [])),
-                  closest: h.closest,
-                  bestBall: outcome.bestBall,
-                  teamPoints: outcome.teamPoints,
-                  ...(draft.scramble ? { shots: { black: shotsFor(draft.holes[i], "black"), white: shotsFor(draft.holes[i], "white") } } : {}),
-                  ...(!draft.scramble && names.some((_, seat) => seatSpotsFor(draft.holes[i], seat).some(Boolean))
-                    ? { seatSpots: names.map((_, seat) => seatSpotsFor(draft.holes[i], seat)) }
-                    : {}),
-                  ...(draft.scramble && TEAMS.some((t) => spotsFor(draft.holes[i], t).some(Boolean))
-                    ? { shotSpots: { black: spotsFor(draft.holes[i], "black"), white: spotsFor(draft.holes[i], "white") } }
-                    : {}),
-                },
-                comment: draft.holes[i].comment.trim(),
-              };
-            }),
-          }
-        : "Finish at least one hole before posting the round.";
     return (
       <div className={styles.scorecard}>
         <section className={styles.card}>
@@ -800,6 +803,8 @@ export default function PointsScorecard({
             </button>
           )}
         </div>
+
+        <LiveTicker payload={buildPayload()} course={course} />
 
         <div className={styles.dots} aria-label="Jump to hole">
           {course.holes.map((h, idx) => (

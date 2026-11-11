@@ -6,7 +6,7 @@ import { getPin } from "../../lib/pin";
 import { TEAM_NAMES, nassauOf, scoreLabel, type Team } from "../../lib/points";
 import { money, settleDots, settleWolf } from "../../lib/settle";
 import { roundShotStats } from "../../lib/skill";
-import { buildRecap } from "../../lib/recap";
+import { buildRecap, roundDrives } from "../../lib/recap";
 import RoundRecap from "./RoundRecap";
 import ShareButton from "./ShareButton";
 import ShotMap, { type ShotMapHole, type ShotTrack } from "./ShotMap";
@@ -98,12 +98,8 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
     ? ((await golfRead<Course[]>("golf_courses", { p_pin: await getPin() }, [], 300)).find((c) => c.id === round.course.id)?.holes ?? [])
     : [];
   const greenOf = (n: number) => (courseHoles.find((x) => x.number === n)?.green ?? null) as Spot | null;
-  const drives: { seat: number; yds: number; hole: number }[] = [];
+  const drives = hasSpots ? roundDrives(round.holes, greenOf) : [];
   const mapHoles: ShotMapHole[] = [];
-  const addDrive = (h: { par: number; number: number }, spots: (Spot | null)[], seat: number | null | undefined) => {
-    const yds = shotYards(spots, greenOf(h.number))[0];
-    if (h.par >= 4 && yds !== null && yds >= 30 && yds <= 450 && seat !== null && seat !== undefined) drives.push({ seat, yds, hole: h.number });
-  };
   if (hasSpots) {
     for (const h of round.holes) {
       const tracks: ShotTrack[] = [];
@@ -117,13 +113,11 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
           spots,
           who: spots.map((_, k) => (who[k] === null || who[k] === undefined ? "" : name(who[k]))),
         });
-        addDrive(h, spots, who[0]);
       }
       (h.extras?.seatSpots ?? []).forEach((list, seat) => {
         const spots = (list ?? []) as (Spot | null)[];
         if (!spotted(spots)) return;
         tracks.push({ name: name(seat), color: SEAT_COLORS[seat % SEAT_COLORS.length], spots, who: spots.map(() => name(seat)) });
-        addDrive(h, spots, seat);
       });
       const c = courseHoles.find((x) => x.number === h.number);
       if (tracks.length) mapHoles.push({ number: h.number, par: h.par, tee: (c?.tee ?? null) as Spot | null, green: greenOf(h.number), tracks });

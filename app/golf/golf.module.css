@@ -905,3 +905,35 @@ a.bannerCard:hover {
   color: var(--green);
   padding: 6px 0;
 }
+.gradeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+.gradeRow .grade {
+  height: 28px;
+  min-width: 36px;
+  font-size: 0.85rem;
+}
+.ticker {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-top: 16px;
+  background: var(--green-soft);
+}
+.ticker h3 {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--green);
+  margin: 0 0 4px;
+}
+.ticker .feed li {
+  padding: 6px 0;
+}
+.ticker .gradeRow {
+  margin-top: 8px;
+}

@@ -7,7 +7,8 @@
 //   Wolf / regular Dots    scoring 40% · game points 25% · big moments 20% · consistency 15%
 //   Captain's choice       shots used vs. fair share 45% · tee shots 20% · holed shots 15% · big moments 20%
 // Round score 0–100 → A 80+, B 60–79, C 40–59, D under 40 (with + / – near the edges).
-import type { SavedRound } from "./api";
+import type { SavedHole, SavedRound } from "./api";
+import { shotYards, type Spot } from "./geo";
 import { TEAM_NAMES, type Team } from "./points";
 import { roundShotStats } from "./skill";
 
@@ -79,7 +80,79 @@ type Stat = {
   moments: number;
 };
 
-export function buildRecap(round: SavedRound, drives: Drive[] = []): Recap {
+/**
+ * GPS drives on par 4s and 5s: captain's choice team balls (credited to whoever hit the tee shot)
+ * and regular rounds' own balls. Readings under 30 or over 450 yds are treated as GPS noise.
+ */
+export function roundDrives(holes: SavedHole[], greenOf: (hole: number) => Spot | null = () => null): Drive[] {
+  const drives: Drive[] = [];
+  const add = (h: SavedHole, spots: (Spot | null)[], seat: number | null | undefined) => {
+    const yds = shotYards(spots, greenOf(h.number))[0];
+    if (h.par >= 4 && yds !== null && yds >= 30 && yds <= 450 && seat !== null && seat !== undefined) drives.push({ seat, yds, hole: h.number });
+  };
+  for (const h of holes) {
+    for (const team of ["black", "white"] as Team[]) {
+      const spots = (h.extras?.shotSpots?.[team] ?? []) as (Spot | null)[];
+      if (spots.some(Boolean)) add(h, spots, h.extras?.shots?.[team]?.[0]);
+    }
+    (h.extras?.seatSpots ?? []).forEach((list, seat) => {
+      const spots = (list ?? []) as (Spot | null)[];
+      if (spots.some(Boolean)) add(h, spots, seat);
+    });
+  }
+  return drives;
+}
+
+/** A scorecard's posting payload (the shape golf_submit_round takes) as a round, for the live feed. */
+export type PostedRound = {
+  format?: string;
+  courseId: number;
+  playedOn: string;
+  submittedBy?: string;
+  settings?: SavedRound["settings"] & { format?: string };
+  players: string[];
+  teams?: Team[];
+  holes: (Omit<SavedHole, "wolfSeat" | "partnerSeat" | "loneWolf" | "comment"> &
+    Partial<Pick<SavedHole, "wolfSeat" | "partnerSeat" | "loneWolf">> & { comment?: string | null })[];
+};
+export function roundFromPayload(p: PostedRound, courseName = ""): SavedRound {
+  const format = p.format === "points" || p.settings?.format === "points" ? "points" : "wolf";
+  const holes: SavedHole[] = p.holes.map((h) => ({
+    wolfSeat: null,
+    partnerSeat: null,
+    loneWolf: false,
+    ...h,
+    comment: h.comment?.trim() || null,
+  }));
+  const teamPoints =
+    format === "points"
+      ? holes.reduce(
+          (t, h) => ({ black: t.black + (h.extras?.teamPoints?.black ?? 0), white: t.white + (h.extras?.teamPoints?.white ?? 0) }),
+          { black: 0, white: 0 },
+        )
+      : null;
+  return {
+    id: "live",
+    format,
+    settings: p.settings ?? null,
+    teamPoints,
+    playedOn: p.playedOn,
+    submittedBy: p.submittedBy ?? null,
+    course: { id: p.courseId, name: courseName, city: null, state: null },
+    players: p.players.map((name, seat) => ({
+      seat,
+      name: name.trim() || `Player ${seat + 1}`,
+      team: p.teams?.[seat] ?? null,
+      result: null,
+      points: holes.reduce((sum, h) => sum + (h.points[seat] ?? 0), 0),
+      strokes: holes.reduce((sum, h) => sum + (h.strokes[seat] ?? 0), 0),
+    })),
+    holes,
+  };
+}
+
+/** `live`: the round is still being played, so the feed has no final result or MVP post yet. */
+export function buildRecap(round: SavedRound, drives: Drive[] = [], { live = false } = {}): Recap {
   const isPoints = round.format === "points";
   const scramble = isPoints && Boolean(round.settings?.rules?.scramble);
   const holes = [...round.holes].sort((a, b) => a.number - b.number);
@@ -429,6 +502,7 @@ export function buildRecap(round: SavedRound, drives: Drive[] = []): Recap {
   }
 
   /* ---------- Final whistle ---------- */
+  if (live) return { feed, grades, mvp, awards, note: null };
   const last = holes.at(-1)?.number ?? null;
   if (isPoints && round.teamPoints) {
     const { black, white } = round.teamPoints;

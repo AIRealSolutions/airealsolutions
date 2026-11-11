@@ -8,6 +8,7 @@ import PostRound from "../PostRound";
 import PlayerPicker from "../PlayerPicker";
 import GpsPanel from "../GpsPanel";
 import { useGps } from "../lib/useGps";
+import LiveTicker from "../LiveTicker";
 import styles from "../golf.module.css";
 
 type HoleEntry = { strokes: (number | null)[]; partnerSeat: number | null; loneWolf: boolean; comment: string };
@@ -245,30 +246,32 @@ export default function WolfScorecard({
     </div>
   );
 
+  const completed = holeInputs.map((h, i) => ({ h, i })).filter(({ h }) => isHoleComplete(h));
+  const buildPayload = () =>
+    completed.length
+      ? {
+          courseId: course.id,
+          playedOn: draft.playedOn,
+          submittedBy: draft.submittedBy,
+          settings: { format: "wolf", rules: { ...rules, betPerPoint: bet }, betPerPoint: bet },
+          players: names,
+          holes: completed.map(({ h, i }) => ({
+            number: course.holes[i].number,
+            par: course.holes[i].par,
+            wolfSeat: h.wolfSeat,
+            partnerSeat: h.loneWolf ? null : h.partnerSeat,
+            loneWolf: h.loneWolf,
+            strokes: h.strokes,
+            points: scoreHole(h, rules)!.points,
+            comment: draft.holes[i].comment.trim(),
+          })),
+        }
+      : "Finish at least one hole before posting the round.";
+
+
   /* ---------- Review & submit ---------- */
   if (draft.phase === "review") {
-    const completed = holeInputs.map((h, i) => ({ h, i })).filter(({ h }) => isHoleComplete(h));
     const payouts = settleWolf(running.points, bet);
-    const buildPayload = () =>
-      completed.length
-        ? {
-            courseId: course.id,
-            playedOn: draft.playedOn,
-            submittedBy: draft.submittedBy,
-            settings: { format: "wolf", rules: { ...rules, betPerPoint: bet }, betPerPoint: bet },
-            players: names,
-            holes: completed.map(({ h, i }) => ({
-              number: course.holes[i].number,
-              par: course.holes[i].par,
-              wolfSeat: h.wolfSeat,
-              partnerSeat: h.loneWolf ? null : h.partnerSeat,
-              loneWolf: h.loneWolf,
-              strokes: h.strokes,
-              points: scoreHole(h, rules)!.points,
-              comment: draft.holes[i].comment.trim(),
-            })),
-          }
-        : "Finish at least one hole before posting the round.";
     return (
       <div className={styles.scorecard}>
         <section className={styles.card}>
@@ -447,6 +450,8 @@ export default function WolfScorecard({
             </button>
           )}
         </div>
+
+        <LiveTicker payload={buildPayload()} course={course} />
 
         <div className={styles.dots} aria-label="Jump to hole">
           {course.holes.map((h, idx) => (
