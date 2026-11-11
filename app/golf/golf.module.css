@@ -937,3 +937,92 @@ a.bannerCard:hover {
 .ticker .gradeRow {
   margin-top: 8px;
 }
+
+/* Bet dials */
+.dialRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.dial {
+  user-select: none;
+  -webkit-user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+.dialLabel {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 2px;
+  text-align: center;
+}
+.dialKnob {
+  width: 100%;
+  max-width: 108px;
+  aspect-ratio: 1;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  border-radius: 50%;
+}
+.dialKnob:active {
+  cursor: grabbing;
+}
+.dialKnob:focus-visible {
+  outline: 3px solid var(--green);
+  outline-offset: 2px;
+}
+.dialTrack,
+.dialFill {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+.dialTrack {
+  stroke: var(--line);
+}
+.dialFill {
+  stroke: var(--green);
+}
+.dialTick {
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  opacity: 0.6;
+}
+.dialThumb {
+  fill: #fff;
+  stroke: var(--green);
+  stroke-width: 3;
+}
+.dialValue {
+  font-size: 19px;
+  font-weight: 900;
+  fill: currentColor;
+  font-variant-numeric: tabular-nums;
+}
+.dialButtons {
+  display: flex;
+  gap: 4px;
+}
+.dialButtons button {
+  width: 28px;
+  height: 30px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  color: inherit;
+}
+.dialButtons button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.dialSingle {
+  max-width: 150px;
+}

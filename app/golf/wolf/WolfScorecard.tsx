@@ -8,6 +8,7 @@ import PostRound from "../PostRound";
 import PlayerPicker from "../PlayerPicker";
 import GpsPanel from "../GpsPanel";
 import { useGps } from "../lib/useGps";
+import BetDial from "../BetDial";
 import LiveTicker from "../LiveTicker";
 import styles from "../golf.module.css";
 
@@ -195,19 +196,13 @@ export default function WolfScorecard({
             ))}
             <small className={styles.muted}>Starts from the control panel. Changes here only apply to this round.</small>
           </details>
-          <label className={styles.field}>
-            <span>Today's bet ($ per point, 0 for no money)</span>
-            <input
-              className={styles.input}
-              type="number"
-              inputMode="decimal"
-              min={0}
-              max={1000}
-              step="0.25"
-              value={bet}
-              onChange={(e) => update({ bet: Math.max(0, Math.min(1000, Number(e.target.value) || 0)) })}
-            />
-          </label>
+          <fieldset className={styles.betBox}>
+            <legend>Today&apos;s bet ($ per point)</legend>
+            <div className={styles.dialSingle}>
+              <BetDial label="Per point" value={bet} onChange={(v) => update({ bet: v })} />
+            </div>
+            <small className={styles.muted}>Drag the dial or tap − / +. Off = no money.</small>
+          </fieldset>
           <label className={styles.field}>
             <span>Your name (optional, shown as scorekeeper)</span>
             <input

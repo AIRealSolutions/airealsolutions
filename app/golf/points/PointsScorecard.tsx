@@ -32,6 +32,7 @@ import { shotYards, type Spot, type SpotLog } from "../lib/geo";
 import { useGps } from "../lib/useGps";
 import type { MapShot } from "../HoleMap";
 import GpsPanel, { SEAT_COLORS } from "../GpsPanel";
+import BetDial from "../BetDial";
 import LiveTicker from "../LiveTicker";
 import styles from "../golf.module.css";
 
@@ -396,7 +397,7 @@ export default function PointsScorecard({
           </details>
           <fieldset className={styles.betBox}>
             <legend>Today's bet ($ per player)</legend>
-            <div className={styles.betGrid}>
+            <div className={styles.dialRow}>
               {(
                 [
                   ["front", "Front 9"],
@@ -405,21 +406,10 @@ export default function PointsScorecard({
                   ["perDot", "Per dot"],
                 ] as [keyof RoundBet, string][]
               ).map(([key, label]) => (
-                <label key={key}>
-                  <span>{label}</span>
-                  <input
-                    className={styles.input}
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    max={1000}
-                    value={roundBet[key]}
-                    onChange={(e) => setBet(key, e.target.value)}
-                  />
-                </label>
+                <BetDial key={key} label={label} value={roundBet[key]} onChange={(v) => setBet(key, String(v))} />
               ))}
             </div>
-            <small className={styles.muted}>Losing team pays each segment per player; winners split it. Ties push. Use 0 for no money.</small>
+            <small className={styles.muted}>Drag a dial or tap − / +. Losing team pays each segment per player; winners split it. Ties push. Off = no money.</small>
           </fieldset>
           <label className={styles.field}>
             <span>Your name (optional, shown as scorekeeper)</span>
