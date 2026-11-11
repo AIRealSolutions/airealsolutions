@@ -760,3 +760,269 @@ a.bannerCard:hover {
   font-size: 0.78rem;
   white-space: nowrap;
 }
+
+/* Round recap: MVP, grades, awards, play by play */
+.mvp {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  border: 1px solid #fde68a;
+  color: #451a03;
+  border-radius: 20px;
+  padding: 18px 22px;
+  margin-bottom: 20px;
+}
+.mvp h2 {
+  font-size: 1.5rem;
+  margin: 0 0 2px;
+}
+.mvp p {
+  margin: 0;
+}
+.mvpTrophy {
+  font-size: 2.6rem;
+  line-height: 1;
+}
+.mvpLabel {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.grade {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 1.05rem;
+  vertical-align: middle;
+  flex: none;
+}
+.gradeA {
+  background: #dcfce7;
+  color: #166534;
+}
+.gradeB {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.gradeC {
+  background: #fef3c7;
+  color: #92400e;
+}
+.gradeD {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.gradeList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.gradeList li {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.gradeList li:first-child {
+  border-top: 0;
+}
+.gradeList p {
+  margin: 2px 0 0;
+  font-size: 0.9rem;
+}
+.subhead {
+  font-size: 1rem;
+  margin: 18px 0 10px;
+}
+.awards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.award {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+.award > span {
+  font-size: 1.6rem;
+}
+.award small,
+.award strong {
+  display: block;
+}
+.award small:first-child {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+}
+.feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.feed li {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.feed li:first-child {
+  border-top: 0;
+}
+.feed p {
+  margin: 2px 0 0;
+}
+.feedIcon {
+  font-size: 1.4rem;
+  width: 32px;
+  text-align: center;
+  flex: none;
+}
+.feedBig strong {
+  color: var(--green);
+}
+.feedMore {
+  margin-top: 10px;
+}
+.feedMore summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--green);
+  padding: 6px 0;
+}
+.gradeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+.gradeRow .grade {
+  height: 28px;
+  min-width: 36px;
+  font-size: 0.85rem;
+}
+.ticker {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-top: 16px;
+  background: var(--green-soft);
+}
+.ticker h3 {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--green);
+  margin: 0 0 4px;
+}
+.ticker .feed li {
+  padding: 6px 0;
+}
+.ticker .gradeRow {
+  margin-top: 8px;
+}
+
+/* Bet dials */
+.dialRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.dial {
+  user-select: none;
+  -webkit-user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+.dialLabel {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 2px;
+  text-align: center;
+}
+.dialKnob {
+  width: 100%;
+  max-width: 108px;
+  aspect-ratio: 1;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  border-radius: 50%;
+}
+.dialKnob:active {
+  cursor: grabbing;
+}
+.dialKnob:focus-visible {
+  outline: 3px solid var(--green);
+  outline-offset: 2px;
+}
+.dialTrack,
+.dialFill {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+.dialTrack {
+  stroke: var(--line);
+}
+.dialFill {
+  stroke: var(--green);
+}
+.dialTick {
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  opacity: 0.6;
+}
+.dialThumb {
+  fill: #fff;
+  stroke: var(--green);
+  stroke-width: 3;
+}
+.dialValue {
+  font-size: 19px;
+  font-weight: 900;
+  fill: currentColor;
+  font-variant-numeric: tabular-nums;
+}
+.dialButtons {
+  display: flex;
+  gap: 4px;
+}
+.dialButtons button {
+  width: 28px;
+  height: 30px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  color: inherit;
+}
+.dialButtons button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.dialSingle {
+  max-width: 150px;
+}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatDate, golfRpc, normalizeSettings, playerHref, type GolfSettings, type Tees } from "../lib/api";
 import CourseMaps from "./CourseMaps";
+import BetDial from "../BetDial";
 import styles from "../golf.module.css";
 
 type Player = {
@@ -49,6 +50,12 @@ type PlayerForm = {
 const PIN_KEY = "golfbuddy.admin.pin";
 const emptyForm: PlayerForm = { name: "", nickname: "", tees: "", email: "", phone: "", handicap: "", tags: "", notes: "", isActive: true };
 
+// Dots bets ($ per player) get dials; the rest are dot values.
+const BET_FIELDS: [string, string][] = [
+  ["nassauFront", "Bet: front 9"],
+  ["nassauBack", "Bet: back 9"],
+  ["nassauTotal", "Bet: total"],
+];
 const POINT_FIELDS: [keyof GolfSettings["games"]["points"]["rules"], string][] = [
   ["nassauFront", "Bet: front 9 ($ per player)"],
   ["nassauBack", "Bet: back 9 ($ per player)"],
@@ -272,19 +279,10 @@ export default function AdminPanel() {
         <div className={styles.grid2}>
           <section className={styles.card}>
             <h2>Bet price</h2>
-            <label className={styles.field}>
-              <span>Dollars per point (Wolf; optional per-dot bet for Dots)</span>
-              <input
-                className={styles.input}
-                type="number"
-                inputMode="decimal"
-                min={0}
-                max={1000}
-                step="0.25"
-                value={settings.betPerPoint}
-                onChange={(e) => setSettings({ ...settings, betPerPoint: Math.max(0, Number(e.target.value) || 0) })}
-              />
-            </label>
+            <p className={styles.muted} style={{ marginTop: 0 }}>Dollars per point (Wolf; optional per-dot bet for Dots)</p>
+            <div className={styles.dialSingle}>
+              <BetDial label="Per point" value={settings.betPerPoint} onChange={(v) => setSettings({ ...settings, betPerPoint: v })} />
+            </div>
             <p className={styles.muted}>
               Set to 0 for no money. Each round keeps the price it was played at.
               <br />
@@ -318,7 +316,19 @@ export default function AdminPanel() {
                 />
                 <span>Game is on</span>
               </label>
-              {(game === "points" ? POINT_FIELDS : WOLF_FIELDS).map(([key, label]) => (
+              {game === "points" && (
+                <div className={styles.dialRow}>
+                  {BET_FIELDS.map(([key, label]) => (
+                    <BetDial
+                      key={key}
+                      label={label}
+                      value={(settings.games.points.rules as Record<string, number>)[key]}
+                      onChange={(v) => setRule("points", key, String(v))}
+                    />
+                  ))}
+                </div>
+              )}
+              {(game === "points" ? POINT_FIELDS.filter(([key]) => !key.startsWith("nassau")) : WOLF_FIELDS).map(([key, label]) => (
                 <label className={styles.ruleRow} key={key}>
                   <span>{label}</span>
                   <input

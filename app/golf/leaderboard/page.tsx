@@ -1,5 +1,6 @@
 import { golfRead, playerHref, type LeaderRow, type TeamRecord } from "../lib/api";
 import { getPin } from "../lib/pin";
+import { mvpRace, seasonRecaps } from "../lib/season";
 import styles from "../golf.module.css";
 
 export const metadata = {
@@ -20,10 +21,12 @@ export default async function LeaderboardPage({
   const year = Number.isInteger(requested) && requested >= 2020 && requested <= thisYear ? requested : thisYear;
   const game: Game = params.game === "wolf" ? "wolf" : "points";
   const pin = await getPin();
-  const [rows, teams] = await Promise.all([
+  const [rows, teams, season] = await Promise.all([
     golfRead<LeaderRow[]>("golf_leaderboard", { p_year: year, p_format: game, p_pin: pin }, []),
     game === "points" ? golfRead<TeamRecord | null>("golf_team_record", { p_year: year, p_pin: pin }, null) : Promise.resolve(null),
+    seasonRecaps(year, 500),
   ]);
+  const race = mvpRace(season.filter((s) => s.round.format === game));
   const href = (g: Game, y = year) => `/golf/leaderboard?game=${g}&year=${y}`;
 
   return (
@@ -137,6 +140,48 @@ export default async function LeaderboardPage({
           </p>
         )}
       </section>
+
+      {race.length > 0 && (
+        <section className={styles.card} id="mvp">
+          <h2>MVP race</h2>
+          <p className={styles.muted}>
+            Every {game === "points" ? "Dots" : "Wolf"} round grades each player A–D against the field and names an MVP. Avg is the
+            round score out of 100.
+          </p>
+          <div className={styles.tableScroll}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Player</th>
+                  <th className={styles.num}>MVPs</th>
+                  <th className={styles.num}>Avg</th>
+                  <th className={styles.num}>A · B · C · D</th>
+                  <th className={styles.num}>Best</th>
+                </tr>
+              </thead>
+              <tbody>
+                {race.map((r, i) => (
+                  <tr key={r.name} className={i === 0 && r.mvps > 0 ? styles.winnerRow : undefined}>
+                    <td>{i + 1}</td>
+                    <td>
+                      <a className={styles.playerLink} href={playerHref(r.name)}>
+                        {r.name}
+                      </a>
+                    </td>
+                    <td className={styles.num}>{r.mvps ? `🏆 ${r.mvps}` : 0}</td>
+                    <td className={styles.num}>{r.avgScore}</td>
+                    <td className={styles.num}>
+                      {r.letters.A} · {r.letters.B} · {r.letters.C} · {r.letters.D}
+                    </td>
+                    <td className={styles.num}>{r.best}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
