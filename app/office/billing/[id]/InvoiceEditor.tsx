@@ -5,7 +5,7 @@ import styles from "../../office.module.css";
 import { BusinessSelect, ErrorBox } from "../../components";
 import { useBusinesses } from "../../useBusinesses";
 import { api } from "../../../factory/connections/session";
-import { officeDelete, officeInsert, officePatch, officeRest, officeToday, shiftDate } from "../../lib/client";
+import { officeDelete, officeInsert, officePatch, officeRest, officeRpc, officeToday, shiftDate } from "../../lib/client";
 import {
   CUSTOMER_SELECT, dollars, INVOICE_SELECT, money, payUrl, PRODUCT_SELECT, STATUS_LABEL, toCents,
   type Customer, type Invoice, type Line, type Payment, type Product,
@@ -14,6 +14,18 @@ import {
 type DraftLine = { key: string; product_id: string | null; description: string; quantity: string; price: string };
 type SendResult = { sent: boolean; via: "gmail" | "resend" | null; link: string; subject: string; text: string };
 let keySeq = 0;
+
+type LineRow = { product_id: string | null; description: string; quantity: number; unit_price_cents: number | null };
+/** One-transaction line replace (phase 4 SQL); falls back to delete + insert before that is installed. */
+async function replaceLines(invoiceId: string, { p_lines }: { p_lines: LineRow[] }) {
+  try {
+    await officeRpc("bill_replace_lines", { p_invoice: invoiceId, p_lines });
+  } catch (e) {
+    if ((e as { code?: string }).code !== "PGRST202") throw e;
+    await officeRest(`bill_invoice_lines?invoice_id=eq.${invoiceId}`, { method: "DELETE", headers: { Prefer: "return=minimal" } });
+    if (p_lines.length) await officeRest("bill_invoice_lines", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify(p_lines.map((l, i) => ({ ...l, invoice_id: invoiceId, sort_order: i }))) });
+  }
+}
 const toDraft = (l: Line): DraftLine => ({ key: `k${keySeq++}`, product_id: l.product_id, description: l.description, quantity: String(Number(l.quantity)), price: dollars(l.unit_price_cents) });
 
 export default function InvoiceEditor({ id }: { id: string }) {
@@ -83,15 +95,10 @@ export default function InvoiceEditor({ id }: { id: string }) {
         customer_id: fields.customer_id, business_id: fields.business_id || null, issue_date: fields.issue_date,
         due_date: fields.due_date || null, memo: fields.memo.trim() || null, tax_cents: tax,
       });
-      // Replace the lines; totals are recomputed by the database.
-      await officeRest(`bill_invoice_lines?invoice_id=eq.${inv.id}`, { method: "DELETE", headers: { Prefer: "return=minimal" } });
-      if (lines.length) {
-        await officeRest("bill_invoice_lines", {
-          method: "POST",
-          headers: { Prefer: "return=minimal" },
-          body: JSON.stringify(lines.map((l, i) => ({ invoice_id: inv.id, product_id: l.product_id, description: l.description.trim(), quantity: Number(l.quantity), unit_price_cents: toCents(l.price), sort_order: i }))),
-        });
-      }
+      // Replace the lines in one transaction; totals and the books are updated by the database.
+      await replaceLines(inv.id, {
+        p_lines: lines.map((l) => ({ product_id: l.product_id, description: l.description.trim(), quantity: Number(l.quantity), unit_price_cents: toCents(l.price) })),
+      });
       await load();
       setMsg("Saved.");
       return true;
@@ -136,7 +143,7 @@ export default function InvoiceEditor({ id }: { id: string }) {
         due_date: shiftDate(today, 15), memo: inv.memo, tax_cents: inv.tax_cents, converted_from: inv.id,
       });
       if (lines.length) {
-        await officeRest("bill_invoice_lines", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify(lines.map((l, i) => ({ invoice_id: n.id, product_id: l.product_id, description: l.description, quantity: Number(l.quantity), unit_price_cents: toCents(l.price), sort_order: i }))) });
+        await replaceLines(n.id, { p_lines: lines.map((l) => ({ product_id: l.product_id, description: l.description, quantity: Number(l.quantity), unit_price_cents: toCents(l.price) })) });
       }
       if (inv.status !== "accepted") await officePatch("bill_invoices", `id=eq.${inv.id}`, { status: "accepted" });
       window.location.assign(`/office/billing/${n.id}`);

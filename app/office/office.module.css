@@ -251,3 +251,17 @@ a.feedTitle:hover{color:var(--brand);text-decoration:underline}
 .totalRow td{font-weight:800;color:var(--ink)!important;font-size:1.05rem}
 @media(max-width:800px){.tiles{grid-template-columns:1fr 1fr}}
 .linesTable td:first-child{min-width:190px}
+/* ---- Phase 4: accounting ---- */
+.moneyIn{color:#0b7a55}
+.subTable{width:100%;border-collapse:collapse;font-size:.85rem;background:#f6f8fb;border-radius:8px}
+.subTable td{padding:6px 8px;border-bottom:1px solid var(--line)}
+.subTable tr:last-child td{border-bottom:0}
+.cellSelect{width:100%;min-width:180px;border:1px solid #cfd7e3;border-radius:8px;padding:7px 9px;font:inherit;background:#fbfcfe}
+.report h2{margin:0}
+@media print{
+  .sidebar,.tabs,.addForm,.pageHeader,.toolbar{display:none!important}
+  .shell{display:block}
+  .page{padding:0;max-width:none}
+  .report{border:0;box-shadow:none}
+  .report .rowActions{display:none}
+}

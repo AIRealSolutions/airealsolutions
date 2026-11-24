@@ -1,6 +1,6 @@
 # AI Real Solutions Back Office ("The Office") — Plan
 
-**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phases 0–1 live; Phases 2–3 built (run `docs/office-phase2.sql` and `docs/office-phase3.sql` in Supabase to switch them on)
+**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phases 0–1 live; Phases 2–4 built (run `docs/office-phase2.sql`, `office-phase3.sql` and `office-phase4.sql` in Supabase, in that order)
 
 ## 0. Decisions made (2026-11-24)
 
@@ -227,8 +227,14 @@ Goal tree, tasks, daily plans, reminders (in-app + email), Daily Planner, a Verc
 - Recurring invoices created by the morning job (optionally emailed automatically); overdue follow-ups at due date, +7, +14, +30 days become reminders.
 - Posting to the general ledger arrives with phase 4 and will be back-filled from these records.
 
-**Phase 4 — Accounting core (2–3 weeks)**
-Entities, chart of accounts, double-entry journal with a balance check, bills and expenses, receipt capture, Plaid bank feeds, reconciliation, Bookkeeper Agent, P&L / balance sheet / aging reports, period close, CPA export.
+**Phase 4 — Accounting core (2–3 weeks)** ✅ built
+- Double-entry ledger in the database: entries must balance (checked at commit), posted entries can't be edited or deleted (reversals only), closed months are locked.
+- Invoices, payments, bills, expenses and categorized bank transactions post themselves through deferred triggers that keep the ledger equal to the records; every line carries its business line.
+- Chart of accounts for a software & services LLC (33 accounts), manual journal entries (opening balances, draws, loans), reversals.
+- Expenses with receipt upload (private Supabase Storage) read by AI, bills with due-date reminders and payment, mileage log at a settable IRS rate.
+- Banking: Plaid bank and card feeds (encrypted tokens, cursor sync), CSV statement import, review queue with rule and Bookkeeper Agent suggestions, matching to recorded payments/bills/expenses, saved rules.
+- Reports: P&L (whole LLC or one business line), P&L by business line, balance sheet, trial balance, A/R and A/P aging, cash in/out by month, contractor payments; CSV and print. Month close/reopen; journal and trial-balance CSV export for the CPA.
+- Not included yet: budget vs actual, full statement of cash flows, sales-tax filing, payroll.
 
 **Phase 5 — CRM (1–1½ weeks)**
 Contacts, pipelines for each business, Gmail timeline, lead intake from the three sites, deal → invoice / subscription / Factory project.
