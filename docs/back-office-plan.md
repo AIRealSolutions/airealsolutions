@@ -1,6 +1,6 @@
 # AI Real Solutions Back Office ("The Office") — Plan
 
-**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phases 0–1 live; Phases 2–4 built (run `docs/office-phase2.sql`, `office-phase3.sql` and `office-phase4.sql` in Supabase, in that order)
+**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phases 0–4 live; Phase 5 built (run `docs/office-phase5.sql` in Supabase to switch it on)
 
 ## 0. Decisions made (2026-11-24)
 
@@ -236,8 +236,12 @@ Goal tree, tasks, daily plans, reminders (in-app + email), Daily Planner, a Verc
 - Reports: P&L (whole LLC or one business line), P&L by business line, balance sheet, trial balance, A/R and A/P aging, cash in/out by month, contractor payments; CSV and print. Month close/reopen; journal and trial-balance CSV export for the CPA.
 - Not included yet: budget vs actual, full statement of cash flows, sales-tax filing, payroll.
 
-**Phase 5 — CRM (1–1½ weeks)**
-Contacts, pipelines for each business, Gmail timeline, lead intake from the three sites, deal → invoice / subscription / Factory project.
+**Phase 5 — CRM (1–1½ weeks)** ✅ built
+- Contacts (one per email), companies, contacts tagged to several businesses with a role, a sales pipeline for the company and each venture (Lead → Discovery → Proposal → Negotiating → Won/Lost) on a board.
+- Website leads: the airealsolutions.com contact form (and any site listed in OFFICE_LEAD_ORIGINS) files the contact, company, business tag, an open deal, a timeline entry, a reminder and a feed item. Honeypot + timing trap; other origins refused.
+- Deal and contact pages with a timeline (notes, calls, meetings, emails), Gmail history from the connected account, and the Follow-up Agent: drafts an email from the timeline that you edit and send from Gmail (logged automatically).
+- Won deals: create a draft invoice (billing customer created or reused) or a Factory client project in Discovery.
+- Morning job: reminders for due next steps and deals quiet for 2+ weeks. Nothing is sent automatically.
 
 **Phase 6 — Content Studio and Library (1½ weeks)**, then **Phase 7 — Publishing and Video (2 weeks)**
 

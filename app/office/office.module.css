@@ -265,3 +265,20 @@ a.feedTitle:hover{color:var(--brand);text-decoration:underline}
   .report{border:0;box-shadow:none}
   .report .rowActions{display:none}
 }
+/* ---- Phase 5: CRM ---- */
+.kanban{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:10px;overflow-x:auto;padding-bottom:10px;margin-top:12px}
+.kanbanCol{background:#eef3f9;border-radius:14px;padding:10px;display:grid;gap:8px;align-content:start;min-height:220px}
+.kanban_won{background:#e3f4ef}
+.kanban_lost{background:#f1f2f4}
+.kanbanHead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:2px 4px 6px}
+.kanbanHead small{color:var(--muted);font-size:.75rem}
+.dealCard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:3px;font-size:.88rem}
+.dealCard a:hover strong{color:var(--brand)}
+.dealMove{display:flex;justify-content:flex-end;gap:4px;margin-top:4px}
+.dealMove button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:2px 9px;cursor:pointer;color:var(--muted)}
+.dealMove button:disabled{opacity:.35;cursor:default}
+.timeline{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:12px}
+.timeline li{display:grid;grid-template-columns:28px 1fr;gap:8px}
+.timeline li>div{display:grid;gap:2px;min-width:0}
+.timelineIcon{font-size:1.05rem;line-height:1.5}
+.timelineBody{white-space:pre-line;margin:4px 0 0!important;color:var(--ink)!important;font-size:.9rem;overflow-wrap:anywhere}

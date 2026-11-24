@@ -1,3 +1,5 @@
+import ContactForm from "./ContactForm";
+
 export const metadata = {
   title: "Contact | AI Real Solutions",
   description:
@@ -36,9 +38,9 @@ export default function ContactPage() {
         <article className="contact-card contact-action-card">
           <p className="eyebrow">Contact</p>
           <h2>Start the conversation.</h2>
-          <p>Email the project summary, even if it is rough. The first goal is simply to understand the problem well enough to decide what should happen next.</p>
-          <a className="button button-primary" href="mailto:marcspencer28461@gmail.com?subject=AI%20Real%20Solutions%20Project%20Inquiry">Email AI Real Solutions</a>
-          <p className="contact-email">marcspencer28461@gmail.com</p>
+          <p>Send the project summary, even if it is rough. The first goal is simply to understand the problem well enough to decide what should happen next.</p>
+          <ContactForm />
+          <p className="contact-email">Prefer email? <a href="mailto:marcspencer28461@gmail.com?subject=AI%20Real%20Solutions%20Project%20Inquiry">marcspencer28461@gmail.com</a></p>
         </article>
       </section>
     </main>

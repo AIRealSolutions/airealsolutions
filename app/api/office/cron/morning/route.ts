@@ -6,6 +6,7 @@
 import { errorResponse, HttpError } from "../../../../lib/integrations/server";
 import { runBillingDaily } from "../../../../lib/office/billing";
 import { suggestCategories } from "../../../../lib/office/bookkeeper";
+import { runCrmDaily } from "../../../../lib/office/crm";
 import { plaidConfigured, syncBanks } from "../../../../lib/office/plaid";
 import { rankNewItems, refreshFeeds } from "../../../../lib/office/feeds";
 import { buildPlan } from "../../../../lib/office/planner";
@@ -30,6 +31,7 @@ export async function GET(request: Request) {
       return { synced, suggested };
     })().catch((e) => { console.error("[office] banking job failed", e); return null; });
     await closeReminder(rest, date).catch((e) => console.error("[office] close reminder failed", e));
+    const crm = await runCrmDaily(rest, date).catch((e) => { console.error("[office] crm job failed", e); return null; });
 
     // Recurring invoices and overdue follow-ups become reminders before the plan reads them.
     const billing = await runBillingDaily(rest, date).catch((e) => { console.error("[office] billing job failed", e); return null; });
@@ -58,7 +60,7 @@ export async function GET(request: Request) {
         body: JSON.stringify({ last_sent_at: new Date().toISOString() }),
       });
     }
-    return Response.json({ date, built, emailed, reminders: reminders.length, billing, banking });
+    return Response.json({ date, built, emailed, reminders: reminders.length, billing, banking, crm });
   } catch (e) {
     return errorResponse(e);
   }

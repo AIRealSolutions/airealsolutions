@@ -32,7 +32,7 @@ export const OFFICE_MODULES: OfficeModule[] = [
   { slug: "schedule", label: "Schedule", group: "Run", phase: 2, ready: true,
     summary: "Week view: Google Calendar plus time blocks for each business.",
     bullets: ["Recurring duties library", "Sunday weekly review"] },
-  { slug: "crm", label: "CRM", group: "Run", phase: 5, ready: false,
+  { slug: "crm", label: "CRM", group: "Run", phase: 5, ready: true,
     summary: "Clients and prospects for AI Real Solutions and its ventures.",
     bullets: ["Pipelines: Lead → Discovery → Proposal → Factory project → Live", "Gmail timeline", "Won deal → invoice, subscription or Factory project"] },
   { slug: "billing", label: "Invoicing & Billing", group: "Money", phase: 3, ready: true,
