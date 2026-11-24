@@ -2,6 +2,7 @@
 
 import {useEffect,useState} from "react";
 import styles from "./login.module.css";
+import OfficeNavLink from "../office/OfficeNavLink";
 
 const SUPABASE_URL=process.env.NEXT_PUBLIC_SUPABASE_URL||"https://xqdsmbyealtammgmpsqe.supabase.co";
 const SUPABASE_KEY=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||"sb_publishable_78q5LVudkA7u2hqsecLmAw_br2XlkUB";
@@ -22,10 +23,20 @@ async function fetchUser(token:string){
   if(!response.ok||!data?.id)throw new Error("Could not verify this Factory session.");
   return data as {id:string;email?:string};
 }
-/** Where to go after signing in: a same-site ?next= path (e.g. /office), else the Factory dashboard. */
-function afterSignIn(){
+/** Is the signed-in user an AI Real Solutions administrator (factory_admins)? */
+async function isAdmin(token:string){
+  try{
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/factory_is_admin`,{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:"{}"});
+    return r.ok&&(await r.json())===true;
+  }catch{return false}
+}
+/** After signing in: a same-site ?next= path, else the Office for administrators, else the Factory dashboard. */
+async function goAfterSignIn(){
   const next=new URLSearchParams(window.location.search).get("next")||"";
-  return next.startsWith("/")&&!next.startsWith("//")&&!next.startsWith("/\\")?next:"/factory/dashboard";
+  if(next.startsWith("/")&&!next.startsWith("//")&&!next.startsWith("/\\")){window.location.assign(next);return}
+  let token="";
+  try{token=JSON.parse(localStorage.getItem(SESSION_KEY)||"{}").access_token||""}catch{}
+  window.location.assign(token&&await isAdmin(token)?"/office":"/factory/dashboard");
 }
 function persist(session:Session){
   const expiresAt=session.expires_at||Math.floor(Date.now()/1000)+(session.expires_in||3600);
@@ -72,7 +83,7 @@ export default function FactoryLogin(){
         persist(session);window.history.replaceState({},"",window.location.pathname);
         setEmail(user.email||OWNER_EMAIL);
         if(recoveryMode){setRecovery(true);setMessage("Choose a new password for your Factory account.");return;}
-        setSignedIn(true);setMessage("Signed in. Opening your Factory dashboard…");window.setTimeout(()=>window.location.assign(afterSignIn()),400);return;
+        setSignedIn(true);setMessage("Signed in. Opening…");window.setTimeout(()=>void goAfterSignIn(),400);return;
       }
       const raw=localStorage.getItem(SESSION_KEY);if(!raw)return;
       const saved=JSON.parse(raw) as Session;if(!saved?.access_token)return;
@@ -87,7 +98,7 @@ export default function FactoryLogin(){
     try{
       const session=await authRequest("token?grant_type=password",{email:email.trim(),password}) as Session;
       if(!session.access_token)throw new Error("No session was returned.");
-      persist(session);setSignedIn(true);setMessage("Signed in. Opening your Factory dashboard…");window.setTimeout(()=>window.location.assign(afterSignIn()),350);
+      persist(session);setSignedIn(true);setMessage("Signed in. Opening…");window.setTimeout(()=>void goAfterSignIn(),350);
     }catch(e){setMessage(e instanceof Error?e.message:"Could not sign in.");}finally{setBusy(false)}
   }
 
@@ -109,7 +120,7 @@ export default function FactoryLogin(){
       const response=await fetch(`${SUPABASE_URL}/auth/v1/user`,{method:"PUT",headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${session.access_token}`,"Content-Type":"application/json"},body:JSON.stringify({password:newPassword})});
       const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data?.msg||data?.message||"Could not update password.");
-      setRecovery(false);setSignedIn(true);setNewPassword("");setMessage("Password saved. Opening your Factory dashboard…");window.setTimeout(()=>window.location.assign(afterSignIn()),500);
+      setRecovery(false);setSignedIn(true);setNewPassword("");setMessage("Password saved. Opening…");window.setTimeout(()=>void goAfterSignIn(),500);
     }catch(e){setMessage(e instanceof Error?e.message:"Could not update password.");}finally{setBusy(false)}
   }
 
@@ -119,7 +130,7 @@ export default function FactoryLogin(){
     <div className={styles.intro}><span className="product-tag">Owner workspace</span><h1>Sign in to <span>My Factory.</span></h1><p>Manage your AI Real Solutions projects, architecture, features, automations, economics, build queues and project history from one place.</p><div className={styles.points}><span>Private project records</span><span>Economics & break-even</span><span>Architecture & build materialization</span><span>Automation planning</span></div></div>
     <div className={styles.card}><span className="product-tag">Secure login</span><h2>Factory access</h2>
       {recovery?<><p className={styles.success}>Password recovery for <strong>{email}</strong></p><label>New password<input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} autoComplete="new-password" minLength={8}/></label><button className="button button-primary" type="button" disabled={busy} onClick={saveNewPassword}>{busy?"Saving…":"Set New Password"}</button></>
-      :signedIn?<><p className={styles.success}>Signed in as <strong>{email}</strong></p><a className="button button-primary" href="/factory/dashboard">Open My Factory</a><button className={styles.linkButton} type="button" onClick={signOut}>Sign out</button></>
+      :signedIn?<><p className={styles.success}>Signed in as <strong>{email}</strong></p><OfficeNavLink className="button button-primary" label="Open the Office" /><a className="button button-secondary" href="/factory/dashboard">Open My Factory</a><button className={styles.linkButton} type="button" onClick={signOut}>Sign out</button></>
       :<><label>Email address<input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email"/></label><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" onKeyDown={e=>{if(e.key==="Enter")void signIn()}}/></label><button className="button button-primary" type="button" disabled={busy} onClick={signIn}>{busy?"Signing in…":"Sign In"}</button><button className={styles.linkButton} type="button" disabled={busy} onClick={sendRecovery}>Set or reset password</button></>}
       {message&&<p className={styles.notice} role="status">{message}</p>}<small className={styles.security}>Factory access is protected by Supabase authentication, membership checks and row-level security.</small>
     </div>
