@@ -226,6 +226,19 @@ export async function listEvents(user: FactoryUser, max = 10): Promise<CalendarE
   return (d.items || []).map(toEvent);
 }
 
+/** Events on the primary calendar between two instants (ISO strings), e.g. one day for the Office planner. */
+export async function listEventsBetween(user: FactoryUser, timeMin: string, timeMax: string, max = 50): Promise<CalendarEvent[]> {
+  const p = new URLSearchParams({
+    timeMin,
+    timeMax,
+    maxResults: String(Math.min(Math.max(max, 1), 100)),
+    singleEvents: "true",
+    orderBy: "startTime",
+  });
+  const d = await google<{ items?: GEvent[] }>(user, `https://www.googleapis.com/calendar/v3/calendars/primary/events?${p}`);
+  return (d.items || []).map(toEvent);
+}
+
 const LOCAL_DT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/;
 
 export async function createEvent(

@@ -76,3 +76,94 @@
   .statusGrid,.formGrid{grid-template-columns:1fr}
   .page{padding:24px 16px 48px}
 }
+/* ---- Phase 1 ---- */
+.headerRow{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.headerActions{display:flex;gap:10px;flex-wrap:wrap}
+.headerActions :global(.button){padding:11px 18px}
+.headerActions :global(.button:disabled){opacity:.6;cursor:default}
+.note{background:#eef3f9;border:1px solid var(--line);color:var(--ink);border-radius:14px;padding:12px 16px;margin-bottom:18px;font-size:.92rem}
+.srOnly{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.smallLink{font-size:.85rem;color:var(--brand);font-weight:700}
+.linkButton{background:none;border:0;padding:4px 2px;color:var(--brand);font:inherit;font-size:.85rem;font-weight:700;cursor:pointer}
+.linkButton:disabled{color:var(--muted);cursor:default}
+.iconButton{background:none;border:0;color:var(--muted);cursor:pointer;font-size:.9rem;padding:4px 6px;border-radius:8px}
+.iconButton:hover{background:#eef3f9;color:var(--ink)}
+.todayGrid{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;align-items:start}
+.stack{display:grid;gap:16px;min-width:0}
+.brief{color:var(--ink)!important;font-size:1.02rem;line-height:1.6}
+.tag{display:inline-block;font-size:.7rem;font-weight:800;border-radius:6px;padding:2px 7px;background:#eef3f9;color:var(--brand-dark);white-space:nowrap}
+.tag_focus{background:#dbe7ff;color:var(--brand-dark)}
+.tag_active{background:#d9f2ee;color:#0b5c55}
+.tag_parked{background:#eceff3;color:var(--muted)}
+.prio{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:2px;vertical-align:middle;background:#9aa6b5}
+.prio1{background:#d14343}
+.prio2{background:var(--brand)}
+.prio3{background:#c4ccd6}
+.bigGoals{margin:0;padding-left:22px;display:grid;gap:12px}
+.bigGoals li{padding-left:4px}
+.bigGoals li>div{display:inline-grid;gap:4px;width:calc(100% - 34px);vertical-align:top}
+.bigGoals li>input{float:right;width:20px;height:20px;margin-top:2px}
+.agenda{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.agenda li{display:grid;grid-template-columns:92px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;background:#f6f8fb;border-left:4px solid var(--brand)}
+.agenda li input{width:20px;height:20px}
+.agenda time{font-weight:800;font-variant-numeric:tabular-nums}
+.agenda time span{color:var(--muted);font-weight:400}
+.agenda li strong{display:block}
+.agenda_meeting{border-left-color:#7c3aed!important;background:#f4f0fe!important}
+.agenda_break{border-left-color:#c4ccd6!important;background:#fbfcfd!important}
+.agenda_admin{border-left-color:var(--accent)!important}
+.taskList{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.taskList.card{padding:8px 12px}
+.taskRow{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:start;padding:9px 0;border-bottom:1px solid var(--line)}
+.taskRow:last-child{border-bottom:0}
+.taskRow>input{width:18px;height:18px;margin-top:3px}
+.taskMain{display:grid;gap:4px;min-width:0}
+.taskTitle{overflow-wrap:anywhere}
+.taskMeta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.taskDone{opacity:.55}
+.taskDone strong,.taskDone .taskTitle{text-decoration:line-through}
+.overdue{color:#b42318!important;font-weight:700}
+.dateInput{border:1px solid transparent;background:transparent;color:var(--muted);font:inherit;font-size:.8rem;padding:1px 4px;border-radius:6px}
+.dateInput:hover,.dateInput:focus{border-color:var(--line);background:#fff}
+.reminderRow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.reminderRow:last-child{border-bottom:0}
+.reminderRow>div:first-child{display:grid;gap:3px;min-width:0}
+.reminderRow :global(.button){padding:7px 14px;font-size:.85rem}
+.rowActions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.toolbar{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin:26px 0 4px}
+.toolbarField{min-width:220px}
+.formGrid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.span2{grid-column:span 2}
+.addForm{margin-top:0;margin-bottom:8px}
+.check{display:flex;gap:8px;align-items:center;margin:18px 0 0;color:var(--muted);font-size:.9rem}
+.goalTree,.goalChildren{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.goalChildren{margin:10px 0 0 18px;padding-left:14px;border-left:2px solid var(--line)}
+.goalItem{display:grid;gap:6px}
+.goalHead{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+.levelBadge{font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);background:#e6f4f2;border-radius:6px;padding:2px 6px}
+.progressRow{display:flex;align-items:center;gap:10px}
+.progressBar{flex:1;max-width:320px;height:8px;border-radius:99px;background:#e7ebf1;overflow:hidden}
+.progressBar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.goalActions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.smallInput{width:90px;border:1px solid #cfd7e3;border-radius:8px;padding:4px 8px;font:inherit;font-size:.85rem}
+.notebook{display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start}
+.noteList{display:grid;gap:10px}
+.noteList ul{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:65vh;overflow-y:auto}
+.noteList li button{width:100%;text-align:left;display:grid;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;font:inherit;color:var(--ink)}
+.noteList li button:hover{border-color:var(--brand)}
+.noteList li button.noteActive{border-color:var(--brand);box-shadow:0 0 0 2px rgba(29,78,216,.15)}
+.noteEditor textarea{font-size:.98rem;line-height:1.6}
+@media(max-width:1000px){
+  .todayGrid,.notebook{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .formGrid4{grid-template-columns:1fr 1fr}
+  .agenda li{grid-template-columns:72px 1fr auto;gap:8px}
+  .reminderRow{flex-direction:column;align-items:stretch}
+  .rowActions{justify-content:flex-start}
+  .headerActions{width:100%}
+}
+@media(max-width:480px){
+  .formGrid4{grid-template-columns:1fr}
+  .span2{grid-column:auto}
+}

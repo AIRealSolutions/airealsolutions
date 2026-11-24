@@ -1,6 +1,6 @@
 # AI Real Solutions Back Office ("The Office") — Plan
 
-**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phase 0 built (`/office`); migration `docs/office-phase0.sql` waiting to be applied
+**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phase 0 live; Phase 1 built (run `docs/office-phase1.sql` in Supabase to switch it on)
 
 ## 0. Decisions made (2026-11-24)
 
@@ -205,10 +205,13 @@ Reports (P&L, balance sheet, aging) are **Postgres views or functions** on top o
 
 ## 6. Build phases (updated)
 
-**Phase 0 — Restructure (½ week)** ✅ code built; database migration waiting for approval
+**Phase 0 — Restructure (½ week)** ✅ done
 `/office` layout with an admin gate (reuse `requireUser` + `factory_admins`) and side navigation; "Office" in the nav for admins only; seed businesses and entities.
 
-**Phase 1 — Today agenda, Goals, Tasks, Reminders (1½ weeks)** *← start here*
+**Phase 1 — Today agenda, Goals, Tasks, Reminders (1½ weeks)** ✅ built
+- Today: Plan my day (Claude, or a rule-based quick plan without AI), morning brief, 3 big goals, time-blocked agenda around Google Calendar, quick capture, reminders due, evening check-in and roll-over.
+- Goals tree, Tasks (repeating tasks), Reminders (repeating, snooze), Notebook with "Turn into tasks".
+- Morning job `/api/office/cron/morning` (vercel.json): builds the plan if missing and emails the brief through Resend when configured. Reminders are delivered in-app and in that email; texts and push come later.
 Goal tree, tasks, daily plans, reminders (in-app + email), Daily Planner, a Vercel Cron job, Google Calendar time-blocking, quick capture.
 
 **Phase 2 — Business feeds and Schedule (1 week)**
