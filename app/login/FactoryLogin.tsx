@@ -22,6 +22,11 @@ async function fetchUser(token:string){
   if(!response.ok||!data?.id)throw new Error("Could not verify this Factory session.");
   return data as {id:string;email?:string};
 }
+/** Where to go after signing in: a same-site ?next= path (e.g. /office), else the Factory dashboard. */
+function afterSignIn(){
+  const next=new URLSearchParams(window.location.search).get("next")||"";
+  return next.startsWith("/")&&!next.startsWith("//")&&!next.startsWith("/\\")?next:"/factory/dashboard";
+}
 function persist(session:Session){
   const expiresAt=session.expires_at||Math.floor(Date.now()/1000)+(session.expires_in||3600);
   localStorage.setItem(SESSION_KEY,JSON.stringify({...session,expires_at:expiresAt}));
@@ -67,7 +72,7 @@ export default function FactoryLogin(){
         persist(session);window.history.replaceState({},"",window.location.pathname);
         setEmail(user.email||OWNER_EMAIL);
         if(recoveryMode){setRecovery(true);setMessage("Choose a new password for your Factory account.");return;}
-        setSignedIn(true);setMessage("Signed in. Opening your Factory dashboard…");window.setTimeout(()=>window.location.assign("/factory/dashboard"),400);return;
+        setSignedIn(true);setMessage("Signed in. Opening your Factory dashboard…");window.setTimeout(()=>window.location.assign(afterSignIn()),400);return;
       }
       const raw=localStorage.getItem(SESSION_KEY);if(!raw)return;
       const saved=JSON.parse(raw) as Session;if(!saved?.access_token)return;
@@ -82,7 +87,7 @@ export default function FactoryLogin(){
     try{
       const session=await authRequest("token?grant_type=password",{email:email.trim(),password}) as Session;
       if(!session.access_token)throw new Error("No session was returned.");
-      persist(session);setSignedIn(true);setMessage("Signed in. Opening your Factory dashboard…");window.setTimeout(()=>window.location.assign("/factory/dashboard"),350);
+      persist(session);setSignedIn(true);setMessage("Signed in. Opening your Factory dashboard…");window.setTimeout(()=>window.location.assign(afterSignIn()),350);
     }catch(e){setMessage(e instanceof Error?e.message:"Could not sign in.");}finally{setBusy(false)}
   }
 
@@ -104,7 +109,7 @@ export default function FactoryLogin(){
       const response=await fetch(`${SUPABASE_URL}/auth/v1/user`,{method:"PUT",headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${session.access_token}`,"Content-Type":"application/json"},body:JSON.stringify({password:newPassword})});
       const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data?.msg||data?.message||"Could not update password.");
-      setRecovery(false);setSignedIn(true);setNewPassword("");setMessage("Password saved. Opening your Factory dashboard…");window.setTimeout(()=>window.location.assign("/factory/dashboard"),500);
+      setRecovery(false);setSignedIn(true);setNewPassword("");setMessage("Password saved. Opening your Factory dashboard…");window.setTimeout(()=>window.location.assign(afterSignIn()),500);
     }catch(e){setMessage(e instanceof Error?e.message:"Could not update password.");}finally{setBusy(false)}
   }
 

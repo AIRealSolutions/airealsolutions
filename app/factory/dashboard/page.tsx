@@ -1,4 +1,5 @@
 import MyFactoryDashboard from "./MyFactoryDashboard";
+import OfficeNavLink from "../../office/OfficeNavLink";
 
 export const metadata={
   title:"My Factory | AI Real Solutions",
@@ -7,7 +8,7 @@ export const metadata={
 
 export default function MyFactoryPage(){
   return <main>
-    <header className="site-header"><a className="brand" href="/"><span className="brand-mark">AI</span><span>Real Solutions</span></a><nav><a href="/factory">Factory</a><a href="/build">New Project</a><a href="/factory/connections">Connections</a><a href="/factory/admin">Admin</a><a className="nav-cta" href="/login">Account</a></nav></header>
+    <header className="site-header"><a className="brand" href="/"><span className="brand-mark">AI</span><span>Real Solutions</span></a><nav><OfficeNavLink/><a href="/factory">Factory</a><a href="/build">New Project</a><a href="/factory/connections">Connections</a><a href="/factory/admin">Admin</a><a className="nav-cta" href="/login">Account</a></nav></header>
     <MyFactoryDashboard/>
   </main>;
 }
