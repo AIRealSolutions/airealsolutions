@@ -35,7 +35,7 @@ export const OFFICE_MODULES: OfficeModule[] = [
   { slug: "crm", label: "CRM", group: "Run", phase: 5, ready: false,
     summary: "Clients and prospects for AI Real Solutions and its ventures.",
     bullets: ["Pipelines: Lead → Discovery → Proposal → Factory project → Live", "Gmail timeline", "Won deal → invoice, subscription or Factory project"] },
-  { slug: "billing", label: "Invoicing & Billing", group: "Money", phase: 3, ready: false,
+  { slug: "billing", label: "Invoicing & Billing", group: "Money", phase: 3, ready: true,
     summary: "Quotes, invoices, subscriptions and payments.",
     bullets: ["Branded invoice PDFs", "Stripe card and ACH pay links", "Recurring billing and overdue reminders"] },
   { slug: "expenses", label: "Expenses & Bills", group: "Money", phase: 4, ready: false,

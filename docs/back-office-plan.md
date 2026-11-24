@@ -1,10 +1,11 @@
 # AI Real Solutions Back Office ("The Office") — Plan
 
-**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phases 0–1 live; Phase 2 built (run `docs/office-phase2.sql` in Supabase to switch it on)
+**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phases 0–1 live; Phases 2–3 built (run `docs/office-phase2.sql` and `docs/office-phase3.sql` in Supabase to switch them on)
 
 ## 0. Decisions made (2026-11-24)
 
 - **Books are built in the Office** (own double-entry ledger), not QuickBooks.
+- **Stripe** for payments and **Plaid** for bank feeds are approved (fees OK).
 - **AI Real Solutions LLC is the one legal entity.** Its ventures (CemeteryBuilder.ai, NCIssues.com, VirtualClerk.ai, ElectionAgents.com, SignForge, Golf Buddy) are business lines inside the LLC's books.
 - **No real estate operations in the Office.** Lightkeeper Realty is a **client** of AI Real Solutions LLC, as are USAHUDHomes.com and FindANCHome.com. The Office tracks only their **development goals** (sites, apps, automations the LLC builds) and bills them as customers. No listings, showings, commissions, HUD bids or trust accounts.
 - Sections below have been trimmed to match.
@@ -219,8 +220,12 @@ Goal tree, tasks, daily plans, reminders (in-app + email), Daily Planner, a Verc
 - Schedule: week view of Google Calendar, time blocks for each business, reminders and tasks due; repeating duties list. The daily planner (AI and quick) puts each business's work inside its block.
 - Weekly review: Sunday-evening job (or Run now on Goals) summarises wins and slips and proposes next week's focus and week goals; pick and apply in one click.
 
-**Phase 3 — Invoicing and Billing (1½ weeks)**
-Customers, products, quotes, invoices, branded PDFs, Stripe pay links and webhooks, recurring billing, dunning, Collections Agent. *This starts posting to a simple ledger.*
+**Phase 3 — Invoicing and Billing (1½ weeks)** ✅ built
+- Customers, price list (by business line), quotes and invoices with numbering (INV-2026-0001, Q-2026-0001), tax, memo; totals and paid/partial status kept by the database.
+- Public invoice/quote page `/pay/<token>`: print/save PDF, Pay online (Stripe Checkout, card + ACH as enabled in Stripe), Accept quote. Webhook records payments once (retries are harmless).
+- Send by email from the connected Gmail (Resend as backup); payment reminders; record checks/ACH/wire by hand; void; quote → invoice.
+- Recurring invoices created by the morning job (optionally emailed automatically); overdue follow-ups at due date, +7, +14, +30 days become reminders.
+- Posting to the general ledger arrives with phase 4 and will be back-filled from these records.
 
 **Phase 4 — Accounting core (2–3 weeks)**
 Entities, chart of accounts, double-entry journal with a balance check, bills and expenses, receipt capture, Plaid bank feeds, reconciliation, Bookkeeper Agent, P&L / balance sheet / aging reports, period close, CPA export.
@@ -236,7 +241,6 @@ Total for phases 0–5 is about 9–11 weeks of build time. Each phase can be us
 
 ## 7. Decisions still open
 
-1. **Payments:** OK to use **Stripe** for invoices and subscriptions, and **Plaid** for bank feeds (both charge fees)? Needed by phase 3.
 2. **Reminder channels:** email only, or also text (Twilio) and phone push?
 3. **News sources:** sites or keywords you already watch for each business.
 4. **Video approach** and **first two social channels** (phase 6).

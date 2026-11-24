@@ -215,3 +215,39 @@ a.feedTitle:hover{color:var(--brand);text-decoration:underline}
 @media(max-width:620px){.week{grid-template-columns:1fr}.weekDay{min-height:0}}
 .plainList>li.reminderRow{display:flex}
 @media(max-width:700px){.plainList>li.reminderRow{flex-direction:column;align-items:stretch}}
+/* ---- Phase 3: billing ---- */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:2px}
+.tile small{color:var(--muted);font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
+.tile strong{font-size:1.5rem;font-variant-numeric:tabular-nums}
+.tile span{color:var(--muted);font-size:.82rem}
+.tileWarn{border-color:#f3b4b4;background:#fff8f8}
+.tileWarn strong{color:#b42318}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto}
+.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;font:inherit;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tabs button.tabActive{color:var(--brand);border-bottom-color:var(--brand)}
+.tableWrap{overflow-x:auto;padding:8px 12px}
+.table{width:100%;border-collapse:collapse;font-size:.92rem}
+.table th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:8px;border-bottom:2px solid var(--line);white-space:nowrap}
+.table td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.table tbody tr:last-child td{border-bottom:0}
+.num{text-align:right!important;white-space:nowrap;font-variant-numeric:tabular-nums}
+.rowLink{cursor:pointer}
+.rowLink:hover td{background:#f6f8fb}
+.statusPill{display:inline-block;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;border-radius:6px;padding:3px 8px;background:#eef3f9;color:var(--brand-dark);white-space:nowrap}
+.st_draft{background:#eceff3;color:var(--muted)}
+.st_paid,.st_accepted{background:#d9f2ee;color:#0b5c55}
+.st_partial{background:#fff7e6;color:#92400e}
+.st_void,.st_declined,.st_expired{background:#eceff3;color:var(--muted);text-decoration:line-through}
+.right{text-align:right}
+.inlineEdit{display:inline-flex;gap:6px;align-items:center}
+.copyBox{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:.85rem/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:#fbfcfe}
+.linesTable{margin:14px 0}
+.linesTable input{width:100%;border:1px solid #cfd7e3;border-radius:8px;padding:7px 9px;font:inherit;background:#fbfcfe}
+.linesTable input:disabled{border-color:transparent;background:transparent;color:var(--ink)}
+.linesTable .qty{width:70px;text-align:right}
+.linesTable .price{width:110px;text-align:right}
+.linesTable tfoot td{border-bottom:0;padding:6px 8px;color:var(--muted)}
+.totalRow td{font-weight:800;color:var(--ink)!important;font-size:1.05rem}
+@media(max-width:800px){.tiles{grid-template-columns:1fr 1fr}}
+.linesTable td:first-child{min-width:190px}

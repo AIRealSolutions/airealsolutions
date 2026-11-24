@@ -10,15 +10,15 @@ export function BizTag({ business }: { business: Business | undefined | null }) 
 }
 
 export function BusinessSelect({
-  businesses, value, onChange, allowNone = true, noneLabel = "No business", label = "Business",
+  businesses, value, onChange, allowNone = true, noneLabel = "No business", label = "Business", disabled = false,
 }: {
-  businesses: Business[]; value: string; onChange: (v: string) => void; allowNone?: boolean; noneLabel?: string; label?: string;
+  businesses: Business[]; value: string; onChange: (v: string) => void; allowNone?: boolean; noneLabel?: string; label?: string; disabled?: boolean;
 }) {
   const groups: [string, Business["relationship"][]][] = [["AI Real Solutions & ventures", ["parent", "venture"]], ["Clients", ["client"]]];
   return (
     <label className={styles.field}>
       {label}
-      <select value={value} onChange={(e) => onChange(e.target.value)}>
+      <select value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
         {allowNone && <option value="">{noneLabel}</option>}
         {groups.map(([name, rels]) => (
           <optgroup key={name} label={name}>
