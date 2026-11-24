@@ -305,3 +305,36 @@ a.feedTitle:hover{color:var(--brand);text-decoration:underline}
 .modelOption input{margin-top:4px}
 .modelOn{border-color:var(--brand);background:#f3f7ff}
 @media(max-width:480px){.readinessGrid{grid-template-columns:1fr}}
+/* ---- Readiness meters, AI review, advisor ---- */
+.meter{display:grid;gap:4px;min-width:0}
+.meterHead{display:flex;justify-content:space-between;font-size:.82rem;color:var(--muted)}
+.meterHead strong{color:var(--ink)}
+.meter .progressBar{max-width:none}
+.barSale i{background:var(--brand)!important}
+.meterRow{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,320px));gap:12px;margin-top:8px}
+.meterLink{display:grid;gap:8px;color:inherit;border-radius:10px;padding:6px;margin:-6px}
+.meterLink:hover{background:#f6f8fb}
+.reviewBox{border:1px solid var(--line);background:#fbfcfe;border-radius:14px;padding:14px 16px;display:grid;gap:10px}
+.scoreBadge{display:inline-block;font-size:.72rem;font-weight:800;border-radius:6px;padding:2px 7px;margin-left:6px}
+.scoreGood{background:#d9f2ee;color:#0b5c55}
+.scoreOk{background:#fff7e6;color:#92400e}
+.scoreLow{background:#fde8e8;color:#b42318}
+.docSection{display:grid;gap:6px}
+.critique{border-left:3px solid #c7d2fe;background:#f5f7ff;border-radius:0 10px 10px 0;padding:8px 12px;font-size:.9rem;display:grid;gap:6px}
+.critique p{margin:0;color:var(--ink)}
+.critique summary{cursor:pointer;font-weight:700;color:var(--brand)}
+.critique details{display:grid;gap:6px}
+.critique .button{justify-self:start;padding:6px 12px;font-size:.85rem;margin-top:6px}
+.advisor{min-height:60vh}
+.chatLog{display:grid;gap:10px;align-content:start;max-height:62vh;overflow-y:auto;padding:4px}
+.msgUser{justify-self:end;max-width:80%;background:var(--brand);color:#fff;border-radius:14px 14px 4px 14px;padding:10px 14px}
+.msgUser p{color:#fff!important}
+.msgAdvisor{justify-self:start;max-width:92%;background:#f1f4f9;border-radius:14px 14px 14px 4px;padding:10px 14px}
+.msgActions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.msgActions button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:5px 10px;font:inherit;font-size:.8rem;cursor:pointer;text-align:left}
+.msgActions button:disabled{color:#0b5c55;cursor:default}
+.starters{display:grid;gap:8px}
+.starters button{text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 12px;font:inherit;cursor:pointer}
+.starters button:hover{border-color:var(--brand)}
+.chatInput{display:flex;gap:10px;align-items:flex-end;border-top:1px solid var(--line);padding-top:12px}
+@media(max-width:600px){.msgUser,.msgAdvisor{max-width:100%}.chatInput{flex-direction:column;align-items:stretch}}

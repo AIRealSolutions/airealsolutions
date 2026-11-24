@@ -1,8 +1,12 @@
 // Section outlines for the Incubator's documents. Shared by the AI drafter (server) and the editor (browser).
-export type DocKind = "business_plan" | "marketing_plan" | "license_offer";
+export type DocKind = "business_plan" | "marketing_plan" | "launch_plan" | "license_offer";
 export type DocSection = { key: string; title: string; guide: string };
 
-export const DOC_LABEL: Record<DocKind, string> = { business_plan: "Business plan", marketing_plan: "Marketing plan", license_offer: "Licensing & sale offer" };
+export const DOC_LABEL: Record<DocKind, string> = { business_plan: "Business plan", marketing_plan: "Marketing plan", launch_plan: "Launch plan", license_offer: "Licensing & sale offer" };
+
+/** Which documents a business gets: owned products can also be licensed or sold; clients can't. */
+export const docKindsFor = (relationship: string): DocKind[] =>
+  relationship === "client" ? ["business_plan", "marketing_plan", "launch_plan"] : ["business_plan", "marketing_plan", "launch_plan", "license_offer"];
 
 export const DOC_SECTIONS: Record<DocKind, DocSection[]> = {
   business_plan: [
@@ -31,6 +35,19 @@ export const DOC_SECTIONS: Record<DocKind, DocSection[]> = {
     { key: "budget", title: "Budget", guide: "A lean monthly budget by channel; realistic for a one-owner company." },
     { key: "metrics", title: "Metrics", guide: "Leading and lagging KPIs and targets." },
     { key: "ninety_days", title: "First 90 days", guide: "A week-by-week or month-by-month action list. These become tasks." },
+  ],
+  launch_plan: [
+    { key: "scope", title: "Launch scope", guide: "What version 1 includes and what explicitly waits for later." },
+    { key: "readiness", title: "Where it stands", guide: "What is built, tested and live today versus what is left, based on the production checklist." },
+    { key: "environments", title: "Environments & infrastructure", guide: "Domain, hosting, database, email, monitoring, and who owns each account (the client's own accounts for client builds)." },
+    { key: "data", title: "Data & content", guide: "Data to migrate or load, content to finish, and who provides it." },
+    { key: "testing", title: "Testing & acceptance", guide: "How it will be tested and what the owner or client must sign off." },
+    { key: "launch_day", title: "Launch day", guide: "Step-by-step cutover checklist with times and owners." },
+    { key: "rollback", title: "Rollback plan", guide: "How to undo the launch quickly if something breaks." },
+    { key: "training", title: "Training & handover", guide: "Who needs training, guides to provide, and how access is handed over." },
+    { key: "support", title: "Support after launch", guide: "First 30 days of support, response times, and the ongoing maintenance arrangement." },
+    { key: "success", title: "Success measures", guide: "How everyone will know the launch worked (usage, leads, time saved, revenue)." },
+    { key: "schedule", title: "Schedule", guide: "Dated steps from today to launch and the first month after. These become tasks." },
   ],
   license_offer: [
     { key: "offering", title: "What is for sale", guide: "The product, code, brand, customers and data that are part of the offer, and what is excluded." },

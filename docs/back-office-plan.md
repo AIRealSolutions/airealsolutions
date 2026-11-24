@@ -1,6 +1,6 @@
 # AI Real Solutions Back Office ("The Office") — Plan
 
-**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phases 0–4 live; Phase 5 and the Incubator built (run `docs/office-phase5.sql`, then `docs/office-incubator.sql`, in Supabase)
+**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phases 0–5 and the Incubator live; production readiness and AI reviews built (run `docs/office-readiness.sql` in Supabase)
 
 ## 0. Decisions made (2026-11-24)
 
@@ -257,6 +257,11 @@ AI Real Solutions LLC is an incubator: every product it owns is being built to b
 - **Business plan, marketing plan, licensing & sale offer** for each product, versioned. Claude drafts them from the Office's own data: the Factory project spec and economics, real revenue and costs for that business line from the books, goals, tasks, notes, CRM deals and the price list. The owner edits and approves; approving a plan ticks its checklist item.
 - **Sale-readiness checklist** (26 standard items across product, legal, business, marketing, operations and financial, plus product-specific items). The AI's gap check proposes more from the plans.
 - **Where the to-dos come from:** "Turn open items into tasks" creates tasks under a "Ready to sell <product>" quarter goal. Tasks flow into the daily plan; finishing a task ticks its item; the goal's progress is the share of items done.
+- **Two readiness tracks:** *Ready for production* (19 standard items: scope, features, testing, domain/DNS, hosting, database and backups, secrets, monitoring, email, support, privacy/terms, data protection, content, SEO, analytics, training, go-live sign-off) for every business, and *Ready to sell* for owned products. Each has its own meter and goal; meters also show on the Businesses page.
+- **Clients** (businesses the LLC builds for and represents) are in the Incubator too, with the production track, a business plan, a marketing plan and a launch plan.
+- **Launch plan** document: scope, where it stands, environments, data, testing, launch day, rollback, training, support, success measures, schedule.
+- **Review with AI:** a tough reviewer scores the document and each section (1-10), lists strengths, weaknesses, what's missing and questions to answer, writes a suggested rewrite for every section (apply one or all), and proposes checklist items.
+- **Advisor:** an ongoing conversation per business with an AI that knows its plans, checklists, goals, tasks, notes, deals and numbers; its answers come with one-click tasks and checklist items.
 - **Ways to buy:** SaaS subscription, white-label license, source-code license, exclusive license, outright sale, with an asking price and a one-line offer. License terms are an outline for an attorney, not legal advice.
 
 ## 7. Decisions still open

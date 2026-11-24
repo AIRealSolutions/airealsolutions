@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Meter } from "../incubator/IncubatorBoard";
+import { ITEM_SELECT, type Item } from "../incubator/types";
 import styles from "../office.module.css";
 import { officeRest, type Business } from "../lib/client";
 import { useBusinesses } from "../useBusinesses";
@@ -16,6 +18,8 @@ const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").repla
 export default function BusinessesBoard() {
   const { businesses, setBusinesses, entities, loading, error, reload } = useBusinesses();
   const [msg, setMsg] = useState("");
+  const [items, setItems] = useState<Item[]>([]);
+  useEffect(() => { officeRest<Item[]>(`office_readiness_items?select=${ITEM_SELECT}&limit=5000`).then(setItems, () => setItems([])); }, [businesses.length]);
 
   async function patch(b: Business, change: Partial<Business>) {
     setMsg("");
@@ -55,7 +59,7 @@ export default function BusinessesBoard() {
               <p className={styles.muted}>{g.note}</p>
               <div className={styles.businessGrid}>
                 {rows.map((b) => (
-                  <BusinessCard key={b.id} b={b} onPatch={(c) => patch(b, c)} />
+                  <BusinessCard key={b.id} b={b} items={items.filter((i) => i.business_id === b.id)} onPatch={(c) => patch(b, c)} />
                 ))}
               </div>
             </div>
@@ -69,7 +73,7 @@ export default function BusinessesBoard() {
   );
 }
 
-function BusinessCard({ b, onPatch }: { b: Business; onPatch: (c: Partial<Business>) => Promise<boolean> }) {
+function BusinessCard({ b, items, onPatch }: { b: Business; items: Item[]; onPatch: (c: Partial<Business>) => Promise<boolean> }) {
   const [focus, setFocus] = useState(b.weekly_focus || "");
   const [saved, setSaved] = useState(false);
   const dirty = focus !== (b.weekly_focus || "");
@@ -89,6 +93,12 @@ function BusinessCard({ b, onPatch }: { b: Business; onPatch: (c: Partial<Busine
         {b.factory_project_id && <span className={styles.pill}>In the Factory</span>}
       </div>
       {b.summary && <p>{b.summary}</p>}
+      {items.length > 0 && (
+        <a href={`/office/incubator/${b.slug}`} className={styles.meterLink}>
+          <Meter label="Ready for production" items={items} track="production" compact />
+          {b.relationship !== "client" && <Meter label="Ready to sell" items={items} track="sale" compact />}
+        </a>
+      )}
       <div className={styles.segmented} role="group" aria-label={`${b.name} status`}>
         {STATUSES.map((s) => (
           <button

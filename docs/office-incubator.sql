@@ -101,7 +101,7 @@ begin
     ('financial','unit_economics','Unit economics worked out','Price, cost to serve, margin, payback.',60),
     ('financial','valuation','Asking price and valuation basis','How the license fees or sale price were set.',61)
   ) as t(category, key, title, detail, ord)
-  on conflict (business_id, title) do nothing;
+  on conflict do nothing;   -- works before and after office-readiness.sql changes the unique key
   get diagnostics n = row_count;
   return n;
 end $$;
@@ -122,8 +122,13 @@ create trigger office_tasks_readiness after update of status on public.office_ta
   for each row execute function public.office_readiness_from_task();
 
 -- The "Ready to sell" goal counts done items out of everything that applies ----------------------------------
+-- (office-readiness.sql later replaces this with a track-aware version; don't overwrite it on a re-run.)
+do $do$
+begin
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'office_ventures' and column_name = 'production_goal_id') then
+    execute $f$
 create or replace function public.office_readiness_goal() returns trigger
-language plpgsql security definer set search_path = '' as $$
+language plpgsql security definer set search_path = '' as $body$
 declare b uuid := coalesce(new.business_id, old.business_id); g uuid; total int; done int;
 begin
   select goal_id into g from public.office_ventures where business_id = b;
@@ -134,7 +139,10 @@ begin
          status = case when total > 0 and done >= total then 'done' when status = 'done' then 'open' else status end
    where id = g;
   return null;
-end $$;
+end $body$;
+    $f$;
+  end if;
+end $do$;
 drop trigger if exists office_readiness_goal_sync on public.office_readiness_items;
 create trigger office_readiness_goal_sync after insert or update or delete on public.office_readiness_items
   for each row execute function public.office_readiness_goal();
@@ -153,7 +161,8 @@ on conflict (business_id) do nothing;
 do $$
 declare r record;
 begin
-  for r in select business_id from public.office_ventures loop
+  for r in select v.business_id from public.office_ventures v join public.office_businesses b on b.id = v.business_id
+            where b.relationship in ('parent','venture') loop
     perform public.office_seed_readiness(r.business_id);
   end loop;
 end $$;
