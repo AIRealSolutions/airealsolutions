@@ -21,7 +21,8 @@ const fmt = (iso: string) => {
 };
 const hasScope = (s: Status["google"], part: string) => Boolean(s?.scopes.some((x) => x.includes(part)));
 
-export default function ConnectionsPanel() {
+/** Account connections. `embedded` drops the page section spacing for use inside the Office. */
+export default function ConnectionsPanel({ embedded = false }: { embedded?: boolean } = {}) {
   const [status, setStatus] = useState<Status | null>(null);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState("");
@@ -63,7 +64,7 @@ export default function ConnectionsPanel() {
 
   if (!status) {
     return (
-      <section className="section">
+      <section className={embedded ? undefined : "section"}>
         <p>{msg || "Loading connections…"}</p>
         {msg && <a className="button button-primary" href="/login">Sign in</a>}
       </section>
@@ -72,7 +73,7 @@ export default function ConnectionsPanel() {
 
   const g = status.google;
   return (
-    <section className={`section ${styles.wrap}`}>
+    <section className={`${embedded ? "" : "section"} ${styles.wrap}`}>
       {msg && <p className={styles.notice} role="status">{msg}</p>}
 
       <article className={styles.card}>

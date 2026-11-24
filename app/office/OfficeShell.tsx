@@ -8,7 +8,7 @@ import { checkAdmin, SESSION_KEY, signedInEmail } from "./lib/client";
 import { factoryToken } from "../factory/connections/session";
 
 type Gate = "checking" | "ok" | "denied" | "error";
-const GROUPS = ["Plan", "Run", "Money", "Grow"] as const;
+const GROUPS = ["Plan", "Run", "Money", "Factory", "Grow"] as const;
 
 /**
  * Admin gate + side navigation for every /office page.
