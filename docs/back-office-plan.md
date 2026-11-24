@@ -1,6 +1,6 @@
 # AI Real Solutions Back Office ("The Office") — Plan
 
-**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phases 0–4 live; Phase 5 built (run `docs/office-phase5.sql` in Supabase to switch it on)
+**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phases 0–4 live; Phase 5 and the Incubator built (run `docs/office-phase5.sql`, then `docs/office-incubator.sql`, in Supabase)
 
 ## 0. Decisions made (2026-11-24)
 
@@ -248,6 +248,16 @@ Goal tree, tasks, daily plans, reminders (in-app + email), Daily Planner, a Verc
 **Phase 8 — Agents Desk, roles (assistant, CPA), text messages and phone push, phone-friendly polish**
 
 Total for phases 0–5 is about 9–11 weeks of build time. Each phase can be used on its own.
+
+## 6b. The Incubator (added 2026-11-24)
+
+AI Real Solutions LLC is an incubator: every product it owns is being built to be **licensed or sold**. The Incubator (`/office/incubator`) is where that happens.
+
+- **Board:** each product (the ventures, plus AI Real Solutions/the Factory itself) with its stage — Idea → Building → Ready to license → For sale → Licensed / Sold (or Paused) — and a sale-readiness score.
+- **Business plan, marketing plan, licensing & sale offer** for each product, versioned. Claude drafts them from the Office's own data: the Factory project spec and economics, real revenue and costs for that business line from the books, goals, tasks, notes, CRM deals and the price list. The owner edits and approves; approving a plan ticks its checklist item.
+- **Sale-readiness checklist** (26 standard items across product, legal, business, marketing, operations and financial, plus product-specific items). The AI's gap check proposes more from the plans.
+- **Where the to-dos come from:** "Turn open items into tasks" creates tasks under a "Ready to sell <product>" quarter goal. Tasks flow into the daily plan; finishing a task ticks its item; the goal's progress is the share of items done.
+- **Ways to buy:** SaaS subscription, white-label license, source-code license, exclusive license, outright sale, with an asking price and a one-line offer. License terms are an outline for an attorney, not legal advice.
 
 ## 7. Decisions still open
 
