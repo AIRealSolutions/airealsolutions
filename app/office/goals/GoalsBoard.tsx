@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import styles from "../office.module.css";
 import { BusinessSelect, ErrorBox } from "../components";
 import { useBusinesses } from "../useBusinesses";
+import { WeeklyReview } from "./WeeklyReview";
 import { officeInsert, officePatch, officeRest, prettyDate, GOAL_LEVELS, GOAL_SELECT, type Business, type Goal, type GoalLevel } from "../lib/client";
 
 type TaskLink = { goal_id: string; status: string };
@@ -59,6 +60,8 @@ export default function GoalsBoard() {
         <p>One tree for each business: year, quarter, month, week, day. Link tasks to a goal and the daily planner will push the work that moves it.</p>
       </header>
       <ErrorBox message={bizError || error} />
+
+      <WeeklyReview businesses={businesses} onAccepted={load} />
 
       <AddGoal businesses={businesses} goals={goals} onAdded={load} onError={setError} />
 

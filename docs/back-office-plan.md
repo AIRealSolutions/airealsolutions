@@ -1,6 +1,6 @@
 # AI Real Solutions Back Office ("The Office") — Plan
 
-**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phase 0 live; Phase 1 built (run `docs/office-phase1.sql` in Supabase to switch it on)
+**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phases 0–1 live; Phase 2 built (run `docs/office-phase2.sql` in Supabase to switch it on)
 
 ## 0. Decisions made (2026-11-24)
 
@@ -214,8 +214,10 @@ Reports (P&L, balance sheet, aging) are **Postgres views or functions** on top o
 - Morning job `/api/office/cron/morning` (vercel.json): builds the plan if missing and emails the brief through Resend when configured. Reminders are delivered in-app and in that email; texts and push come later.
 Goal tree, tasks, daily plans, reminders (in-app + email), Daily Planner, a Vercel Cron job, Google Calendar time-blocking, quick capture.
 
-**Phase 2 — Business feeds and Schedule (1 week)**
-Feed sources for each business (RSS, Google News, NCGA bills, RFPs), Feed Agent with suggested actions, week view, recurring duties, Weekly Reviewer.
+**Phase 2 — Business feeds and Schedule (1 week)** ✅ built
+- Feed: Google News searches and RSS/Atom feeds for each business (starter searches seeded for the ventures), Feed Agent scores each item (Act / Read / FYI) with a one-line why and a suggested task, reminder or note; internal events for goals reached and Factory stage changes. Top news shows on Today and in the morning brief.
+- Schedule: week view of Google Calendar, time blocks for each business, reminders and tasks due; repeating duties list. The daily planner (AI and quick) puts each business's work inside its block.
+- Weekly review: Sunday-evening job (or Run now on Goals) summarises wins and slips and proposes next week's focus and week goals; pick and apply in one click.
 
 **Phase 3 — Invoicing and Billing (1½ weeks)**
 Customers, products, quotes, invoices, branded PDFs, Stripe pay links and webhooks, recurring billing, dunning, Collections Agent. *This starts posting to a simple ledger.*

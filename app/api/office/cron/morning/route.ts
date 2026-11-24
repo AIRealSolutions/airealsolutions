@@ -4,6 +4,7 @@
 // The cron path cannot read Google Calendar (that needs the owner's session); the plan notes it,
 // and "Re-plan" on the Today page adds the calendar.
 import { errorResponse, HttpError } from "../../../../lib/integrations/server";
+import { rankNewItems, refreshFeeds } from "../../../../lib/office/feeds";
 import { buildPlan } from "../../../../lib/office/planner";
 import { addDays, asService, localTime, officeDate, tzOffset, weekdayName, type AgendaItem, type BigGoal } from "../../../../lib/office/server";
 
@@ -15,6 +16,9 @@ export async function GET(request: Request) {
     if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) throw new HttpError(401, "Unauthorized.");
     const rest = asService();
     const date = officeDate();
+
+    // Fresh news first, so the plan's brief can mention today's top items. Never blocks the plan.
+    await refreshFeeds(rest).then(() => rankNewItems(rest)).catch((e) => console.error("[office] morning feed refresh failed", e));
 
     const existing = await rest<{ brief: string; big_goals: BigGoal[]; agenda: AgendaItem[] }[]>(
       `office_daily_plans?plan_date=eq.${date}&select=brief,big_goals,agenda&limit=1`,

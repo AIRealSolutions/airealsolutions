@@ -30,25 +30,51 @@ export function quickPlan(ctx: PlanContext): DayPlan {
   const free = (s: number, e: number) => !busy.some((b) => b.s < e && b.e > s);
 
   let cursor = dayStart;
-  const place = (title: string, minutes: number, extra: Partial<AgendaItem>) => {
-    let s = cursor;
-    while (s + minutes <= dayEnd && !free(s, s + minutes)) s += 15;
-    if (s + minutes > dayEnd) return false;
+  /** Put an item in the first free slot between `from` and `to` (defaults: cursor..end of day). */
+  const place = (title: string, minutes: number, extra: Partial<AgendaItem>, from = cursor, to = dayEnd, moveCursor = true) => {
+    let s = from;
+    while (s + minutes <= to && !free(s, s + minutes)) s += 15;
+    if (s + minutes > to) return false;
     busy.push({ s, e: s + minutes });
     agenda.push({ start: fromMin(s), end: fromMin(s + minutes), title, business_slug: "", task_id: "", kind: "task", ...extra });
-    cursor = s + minutes + 10; // 10-minute buffer
+    if (moveCursor) cursor = s + minutes + 10; // 10-minute buffer
     return true;
   };
 
   let used = 0;
   const budget = Math.round((dayEnd - dayStart - busy.reduce((n, b) => n + (b.e - b.s), 0)) * 0.8);
-  for (const t of candidates) {
-    const minutes = Math.min(Math.max(t.estimate_min || 45, 15), 180);
-    if (used + minutes > budget) continue;
-    if (place(t.title, minutes, { business_slug: slug(t.business_id), task_id: t.id })) used += minutes;
-  }
-  place("Email, reminders and admin", 30, { kind: "admin" });
+  const placed = new Set<string>();
+  const len = (t: PlanTask) => Math.min(Math.max(t.estimate_min || 45, 15), 180);
 
+  // 1) Standing time blocks: each business's tasks go inside its own block first.
+  for (const b of ctx.blocks.filter((x) => x.business_id)) {
+    let from = toMin(b.start);
+    for (const t of candidates.filter((c) => c.business_id === b.business_id && !placed.has(c.id))) {
+      const m = len(t);
+      if (used + m > budget) break;
+      if (place(t.title, m, { business_slug: slug(t.business_id), task_id: t.id }, from, toMin(b.end), false)) {
+        placed.add(t.id);
+        used += m;
+        from = Math.max(...busy.filter((x) => x.s >= from).map((x) => x.e)) + 10;
+      }
+    }
+  }
+  // Keep other work out of business blocks where possible.
+  const blockBusy = ctx.blocks.filter((x) => x.business_id).map((x) => ({ s: toMin(x.start), e: toMin(x.end) }));
+  busy.push(...blockBusy);
+
+  // 2) Everything else, in rank order.
+  for (const t of candidates) {
+    if (placed.has(t.id)) continue;
+    const m = len(t);
+    if (used + m > budget) continue;
+    if (place(t.title, m, { business_slug: slug(t.business_id), task_id: t.id })) { placed.add(t.id); used += m; }
+  }
+  // If blocks crowded the day out, release them for the admin block.
+  if (!place("Email, reminders and admin", 30, { kind: "admin" })) {
+    for (const b of blockBusy) busy.splice(busy.indexOf(b), 1);
+    place("Email, reminders and admin", 30, { kind: "admin" }, dayStart);
+  }
   agenda.sort((a, b) => a.start.localeCompare(b.start));
   const overdue = ctx.tasks.filter((t) => t.due_on && t.due_on < ctx.date).length;
   const brief = [

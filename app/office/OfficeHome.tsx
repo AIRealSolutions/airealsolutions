@@ -26,6 +26,7 @@ export default function OfficeHome() {
   const [warning, setWarning] = useState("");
   const [aiReady, setAiReady] = useState<boolean | null>(null);
   const [busyTask, setBusyTask] = useState("");
+  const [news, setNews] = useState<{ id: string; title: string; url: string | null; business_id: string | null; summary: string | null }[]>([]);
 
   const bySlug = useMemo(() => new Map(businesses.map((b) => [b.slug, b])), [businesses]);
   const byId = useMemo(() => new Map(businesses.map((b) => [b.id, b])), [businesses]);
@@ -40,6 +41,8 @@ export default function OfficeHome() {
         officeRest<Reminder[]>(`office_reminders?status=eq.pending&remind_at=lt.${encodeURIComponent(endOfOfficeDay(today))}&select=${REMINDER_SELECT}&order=remind_at.asc`),
       ]);
       setPlan(p[0] ?? null);
+      officeRest<typeof news>("office_feed_items?status=eq.new&kind=eq.news&score=gte.70&select=id,title,url,business_id,summary&order=score.desc,created_at.desc&limit=3")
+        .then(setNews, () => setNews([]));
       setTasks(t);
       setReminders(r);
     } catch (e) {
@@ -207,6 +210,21 @@ export default function OfficeHome() {
                 ))}
               </ul>
             </article>
+
+            {news.length > 0 && (
+              <article className={styles.card}>
+                <div className={styles.cardHead}><h2>Top news</h2><a className={styles.smallLink} href="/office/feed">Feed →</a></div>
+                <ul className={styles.plainList}>
+                  {news.map((n) => (
+                    <li key={n.id}>
+                      {n.url && /^https?:\/\//i.test(n.url) ? <a className={styles.feedTitle} href={n.url} target="_blank" rel="noopener noreferrer nofollow">{n.title}</a> : <strong>{n.title}</strong>}
+                      <span className={styles.taskMeta}><BizTag business={n.business_id ? byId.get(n.business_id) : undefined} /></span>
+                      {n.summary && <small className={styles.muted}>{n.summary}</small>}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            )}
 
             <article className={styles.card}>
               <div className={styles.cardHead}><h2>Also due</h2><a className={styles.smallLink} href="/office/tasks">All tasks →</a></div>

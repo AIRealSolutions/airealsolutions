@@ -61,6 +61,10 @@ export type PlanGoal = { id: string; business_id: string; level: string; title: 
 export type PlanTask = { id: string; business_id: string | null; goal_id: string | null; title: string; due_on: string | null; estimate_min: number | null; priority: number };
 export type PlanReminder = { id: string; business_id: string | null; title: string; remind_at: string };
 export type PlanEvent = { summary: string; start: string; end: string; allDay: boolean };
+export type PlanBlock = { business_id: string | null; start: string; end: string; label: string | null };
+
+/** ISO weekday (1 Monday ... 7 Sunday) of a YYYY-MM-DD date. */
+export const isoWeekday = (date: string) => new Date(`${date}T12:00:00Z`).getUTCDay() || 7;
 
 export type PlanContext = {
   date: string;
@@ -72,6 +76,8 @@ export type PlanContext = {
   reminders: PlanReminder[];
   events: PlanEvent[];
   calendarNote: string | null;
+  blocks: PlanBlock[];
+  news: { title: string; business_slug: string; summary: string | null }[];
   yesterday: { reflection: string | null; unfinished: string[] } | null;
 };
 
@@ -87,7 +93,7 @@ export function workday() {
 export async function loadPlanContext(rest: Rest, date: string, events: PlanEvent[], calendarNote: string | null): Promise<PlanContext> {
   const yesterday = addDays(date, -1);
   const until = `${addDays(date, 1)}T00:00:00${tzOffset(date)}`;
-  const [businesses, goals, tasks, reminders, prev] = await Promise.all([
+  const [businesses, goals, tasks, reminders, prev, blockRows, newsRows] = await Promise.all([
     rest<PlanBusiness[]>("office_businesses?select=id,slug,name,relationship,status,weekly_focus&order=sort_order.asc"),
     rest<PlanGoal[]>("office_goals?status=eq.open&level=in.(week,month,quarter,day)&select=id,business_id,level,title,target_value,current_value,unit,due_on&order=due_on.asc.nullslast&limit=60"),
     rest<PlanTask[]>("office_tasks?status=eq.todo&select=id,business_id,goal_id,title,due_on,estimate_min,priority&order=priority.asc,due_on.asc.nullslast&limit=80"),
@@ -95,6 +101,13 @@ export async function loadPlanContext(rest: Rest, date: string, events: PlanEven
     rest<{ reflection: string | null; agenda: { title: string; task_id: string }[] }[]>(
       `office_daily_plans?plan_date=eq.${yesterday}&select=reflection,agenda&limit=1`,
     ),
+    // Phase 2 tables: tolerate their absence so planning still works before that migration runs.
+    rest<{ business_id: string | null; start_time: string; end_time: string; label: string | null }[]>(
+      `office_time_blocks?weekday=eq.${isoWeekday(date)}&select=business_id,start_time,end_time,label&order=start_time.asc`,
+    ).catch(() => []),
+    rest<{ title: string; business_id: string | null; summary: string | null }[]>(
+      `office_feed_items?status=eq.new&kind=eq.news&score=gte.70&created_at=gte.${encodeURIComponent(new Date(Date.now() - 2 * 86_400_000).toISOString())}&select=title,business_id,summary&order=score.desc&limit=5`,
+    ).catch(() => []),
   ]);
   const openIds = new Set(tasks.map((t) => t.id));
   const p = prev[0];
@@ -108,6 +121,8 @@ export async function loadPlanContext(rest: Rest, date: string, events: PlanEven
     reminders,
     events,
     calendarNote,
+    blocks: blockRows.map((b) => ({ business_id: b.business_id, start: b.start_time.slice(0, 5), end: b.end_time.slice(0, 5), label: b.label })),
+    news: newsRows.map((n) => ({ title: n.title, business_slug: businesses.find((b) => b.id === n.business_id)?.slug || "", summary: n.summary })),
     yesterday: p
       ? { reflection: p.reflection, unfinished: (p.agenda || []).filter((a) => a.task_id && openIds.has(a.task_id)).map((a) => a.title) }
       : null,
