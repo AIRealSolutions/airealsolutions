@@ -1,6 +1,13 @@
 # AI Real Solutions Back Office ("The Office") — Plan
 
-**Date:** 2026-11-24 (rev. 2: added accounting, invoicing and billing, daily agenda, per-business goals, news feeds and reminders) · **Status:** Proposed, nothing built yet
+**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phase 0 built (`/office`); migration `docs/office-phase0.sql` waiting to be applied
+
+## 0. Decisions made (2026-11-24)
+
+- **Books are built in the Office** (own double-entry ledger), not QuickBooks.
+- **AI Real Solutions LLC is the one legal entity.** Its ventures (CemeteryBuilder.ai, NCIssues.com, VirtualClerk.ai, ElectionAgents.com, SignForge, Golf Buddy) are business lines inside the LLC's books.
+- **No real estate operations in the Office.** Lightkeeper Realty is a **client** of AI Real Solutions LLC, as are USAHUDHomes.com and FindANCHome.com. The Office tracks only their **development goals** (sites, apps, automations the LLC builds) and bills them as customers. No listings, showings, commissions, HUD bids or trust accounts.
+- Sections below have been trimmed to match.
 
 ## 1. The idea in one paragraph
 
@@ -17,14 +24,14 @@ The Factory stays the product you share with clients. The Office is the private 
 
 ## 2. The businesses the Office manages
 
-Each one is a **Business** record, and for accounting it is also an **Entity** with its own books (see §3.9). Everything else (goals, tasks, reminders, feed items, contacts, invoices, posts, notes) is tagged with one.
+Each one is a **Business** record. AI Real Solutions LLC is the one **Entity** with books (see §3.9); ventures are business lines inside it and clients are customers of it. Everything else (goals, tasks, reminders, feed items, contacts, invoices, posts, notes) is tagged with one.
 
 | Business | Type | Goals / feed / reminders examples |
 |---|---|---|
 | **AI Real Solutions** | Parent, software / AI | Monthly recurring revenue goal; feed: AI and dev-tool news; reminders: client renewals, Factory stage gates |
-| **Lightkeeper Realty** | Brokerage | Closings per quarter; feed: SE NC market stats, rate news; reminders: license and CE renewal, closing dates, trust account reconciliation |
-| **USAHUDHomes.com** | HUD referral | Referral fees per month; feed: new NC HUD listings, price cuts, bid-period changes; reminders: bid deadlines, referral fee follow-ups |
-| **FindANCHome.com** | Local real estate | Leads per week; feed: new local listings, neighborhood news; reminders: showing follow-ups, open houses |
+| **Lightkeeper Realty** | Client | Development goals for the sites and tools ARS builds for them; reminders: deliverables, invoice due dates |
+| **USAHUDHomes.com** | Client | Development goals for the site; reminders: releases, invoices |
+| **FindANCHome.com** | Client | Development goals for the site; reminders: releases, invoices |
 | **CemeteryBuilder.ai** | AI product | Pilot customers; feed: cemetery and funeral industry news, RFPs; reminders: demos, release milestones |
 | **NCIssues.com** | Civic watchdog | Subscribers and posts per week; feed: NC General Assembly bill movements, committee calendars; reminders: votes and hearings |
 | **VirtualClerk.ai, ElectionAgents.com, SignForge** | Products | Launch milestones; feed: municipal / election tech news, procurement bids |
@@ -38,13 +45,13 @@ Each business can be marked **Focus / Active / Parked**. That decides how many a
 The morning screen is an **agenda**, not just a list:
 
 1. **Morning brief** (2-minute read): yesterday's wins, money in and out, overdue invoices, today's meetings, top news for each business.
-2. **Today's 3 big goals:** the outcomes that move a weekly goal forward ("Submit HUD bid on 123 Oak St", "Send CemeteryBuilder proposal to Brunswick County").
-3. **Time-blocked agenda:** each goal and task is placed into an open slot around your Google Calendar meetings, using each business's time blocks (e.g. 8–10 real estate, 10–12 CemeteryBuilder build, 1–2 admin and billing).
+2. **Today's 3 big goals:** the outcomes that move a weekly goal forward ("Ship the Lightkeeper site contact form", "Send CemeteryBuilder proposal to Brunswick County").
+3. **Time-blocked agenda:** each goal and task is placed into an open slot around your Google Calendar meetings, using each business's time blocks (e.g. 8–10 client builds, 10–12 CemeteryBuilder build, 1–2 admin and billing).
 4. **Reminders due today** and **follow-ups** (CRM, invoices).
 5. **Quick capture**: type or dictate; AI files it as a task, note, reminder, expense or contact.
 6. **Evening check-in:** mark done, roll leftovers to tomorrow, a one-line reflection. The planner learns how long things really take you.
 
-You can accept the AI agenda as is, drag things around, or say "lighter day" or "only real estate today" and it re-plans.
+You can accept the AI agenda as is, drag things around, or say "lighter day" or "only client work today" and it re-plans.
 
 ### 3.2 Goals: one tree for each business (`/office/goals`)
 - Levels: **Year → Quarter → Month → Week → Day**. Every daily task traces up to a bigger goal.
@@ -55,29 +62,27 @@ You can accept the AI agenda as is, drag things around, or say "lighter day" or 
 ### 3.3 Business feeds: news and activity (`/office/feed` and on each business page)
 Each business gets its own **feed**, mixing outside news with inside activity:
 
-- **Outside sources (set up for each business):** RSS feeds, Google News keyword searches, HUD HomeStore NC listings, NC General Assembly bill data (from NCIssues), procurement or RFP searches, competitor sites.
+- **Outside sources (set up for each business):** RSS feeds, Google News keyword searches, NC General Assembly bill data (from NCIssues), procurement or RFP searches, competitor sites.
 - **Inside events:** new lead, invoice paid, invoice overdue, deal moved stage, post published, Factory project stage change, agent finished a job.
-- The **Feed Agent** summarizes and ranks items, drops duplicates and noise, and adds a "**Suggested action**" button that turns an item into a task, reminder or content idea ("New HUD listing in Leland under $150k → send to 3 buyer contacts").
+- The **Feed Agent** summarizes and ranks items, drops duplicates and noise, and adds a "**Suggested action**" button that turns an item into a task, reminder or content idea ("County posts an RFP for cemetery mapping → draft a CemeteryBuilder proposal").
 
 ### 3.4 Reminders system (`/office/reminders`)
 - One-time and **recurring** reminders (daily, weekly, monthly, yearly, "the 1st business day", "10 days before X").
-- **Created automatically** from other modules: task due dates, deal next-steps, invoice due or overdue, bill payments, tax deadlines, license renewals, HUD bid deadlines, legislative hearings, content publish times.
+- **Created automatically** from other modules: task due dates, deal next-steps, invoice due or overdue, bill payments, tax deadlines, client deliverables, legislative hearings, content publish times.
 - Delivery: in-app always, plus **email** (Resend, already set up for auth), **text** (Twilio), and **phone push** (PWA), set by urgency.
 - Snooze, done, or "turn into task". Escalation: an unacknowledged high-priority reminder is re-sent on another channel.
 - A Vercel Cron job checks every 15 minutes and sends what is due.
 
 ### 3.5 Schedule (`/office/schedule`)
 - A week view that combines Google Calendar events, time blocks for each business, and reminders.
-- Recurring duties library: license and CE renewals, HUD bid periods, General Assembly session days, content days, month-end close, quarterly taxes.
+- Recurring duties library: client milestones, General Assembly session days, content days, month-end close, quarterly taxes.
 
 ### 3.6 CRM (`/office/crm`)
 - **Contacts** and **Companies**, each tagged with one or more businesses.
 - **Pipelines for each business:**
-  - Real estate: Lead → Contacted → Showing → Offer → Under contract → Closed
-  - HUD referral: Referral in → Bid prep → Bid submitted → Accepted → Closed → **Referral fee invoiced → Paid**
   - Software: Lead → Discovery → Proposal → Factory project → Live → **Subscription active**
 - An activity timeline (Gmail, calls, notes, meetings); a follow-up agent drafts emails for you to approve.
-- Lead intake from airealsolutions.com, findanchome.com and usahudhomes.com.
+- Lead intake from airealsolutions.com and the venture sites.
 - **Linked to billing:** a closed deal can create an invoice or start a subscription in one click.
 
 ### 3.7 Invoicing and Billing (`/office/billing`)
@@ -88,26 +93,25 @@ Each business gets its own **feed**, mixing outside news with inside activity:
 - **Online payment** through **Stripe** (card and ACH), with a pay link on every invoice; Stripe webhooks mark invoices paid and post them to the books automatically.
 - **Payment tracking:** partial payments, credits, refunds, write-offs; checks and wires entered by hand.
 - **Dunning:** automatic friendly reminders at due date, +7, +14 and +30 days, plus an overdue list in the morning brief.
-- **Commission and referral tracking** for real estate: expected commission on each deal, splits, referral fees owed to and from USAHUDHomes partners, and 1099 totals for each payee.
+- **1099 totals** for contractors the LLC pays.
 - Time tracking (optional): log hours on a client or Factory project, then bill the unbilled time.
 
 ### 3.8 Expenses and Bills (`/office/expenses`)
 - **Bills** you owe (vendors, MLS dues, software, hosting). Each gets due-date reminders and a "mark paid" button.
 - **Receipt capture:** snap a photo or forward an email. AI reads the vendor, amount, date and category, and suggests the business and account.
-- Mileage log for showings (an IRS mileage rate setting you update each year).
+- Mileage log for client visits (an IRS mileage rate setting you update each year).
 - Recurring expenses detected from bank feeds (Vercel, Supabase, Anthropic, GoDaddy, etc.).
 
 ### 3.9 Accounting: full books (`/office/accounting`)
 A real **double-entry general ledger**, kept **separately for each entity** with a combined (consolidated) view:
 
-- **Chart of accounts** for each entity, starting from templates (service business, real estate brokerage, SaaS).
+- **Chart of accounts** for each entity, starting from a template for a software and services LLC.
 - **Journal entries:** every invoice, payment, bill, expense, payout and transfer posts balanced debits and credits. Manual journal entries are also allowed.
 - **Bank and card feeds** (Plaid) with **reconciliation**: match transactions to invoices, bills or rules, and AI suggests categories.
-- **Inter-company transactions:** e.g. ARS builds CemeteryBuilder's software, or Lightkeeper pays ARS for its website. Recorded as due-to / due-from between entities.
+- **Business lines:** every journal line carries the venture or client it belongs to, so each venture gets its own P&L and each client its own revenue history inside the LLC's books.
 - **Reports** for each entity and combined: Profit and Loss, Balance Sheet, Cash Flow, AR aging, AP aging, sales by customer, expenses by category, budget vs actual (tied to Goals), 1099 summary.
 - **Period close:** a month-end checklist (reconcile banks, review uncategorized items, lock the period).
 - **Tax prep support:** quarterly estimated tax reminders, NC and federal deadline calendar, and **exports for your CPA** (CSV, plus QuickBooks-compatible files).
-- **Real estate trust / escrow:** the NC Real Estate Commission has strict trust account rules. The Office **tracks and reconciles** trust deposits (earnest money) in a separate trust ledger and reminds you about the reconciliation, but it does **not** move trust money. Confirm the setup with your CPA and the NCREC rules.
 - **Audit trail:** every change is logged; posted entries are reversed, never deleted.
 - **Accountant role:** a read-only (or bookkeeper) login for your CPA.
 
@@ -117,7 +121,7 @@ A real **double-entry general ledger**, kept **separately for each entity** with
 - A content calendar across businesses and channels (Facebook, Instagram, YouTube, TikTok, LinkedIn, X).
 - **Idea → Script → Assets → Scheduled → Published → Results** pipeline for each piece.
 - AI writers: Reels/Shorts, YouTube planner, Repurposer, NCIssues bill-to-post, listing promo.
-- Brand kits for each business; Equal Housing and broker disclosures added to real estate content.
+- Brand kits for each business.
 - Video in stages: (1) scripts and shot lists, (2) auto-assembled reels from templates, (3) optional AI avatar or voice.
 - Publishing: copy by hand first, then the YouTube Data API and Meta Graph API.
 
@@ -138,7 +142,7 @@ office_tasks           id, business_id, goal_id?, title, notes, due_on, estimate
 office_daily_plans     id, plan_date, brief jsonb, agenda jsonb[{slot_start, slot_end, task_id|event_id, reason}], reflection, agent_run_id
 office_time_blocks     id, business_id, weekday, start_time, end_time
 office_reminders       id, business_id?, title, due_at, rrule?, channels text[], priority, status(pending|sent|snoozed|done), source_type, source_id, last_sent_at
-office_feed_sources    id, business_id, kind(rss|google_news|hud|ncga|rfp|url), config jsonb, active
+office_feed_sources    id, business_id, kind(rss|google_news|ncga|rfp|url), config jsonb, active
 office_feed_items      id, business_id, source_id?, kind(news|internal), title, url, summary, score, suggested_action jsonb, status(new|seen|actioned|dismissed), published_at
 office_notes           id, business_id?, title, body, ai_summary, converted_task_ids uuid[]
 office_approvals       id, kind(email|post|plan|invoice|journal), payload jsonb, status, decided_at
@@ -148,7 +152,7 @@ office_approvals       id, kind(email|post|plan|invoice|journal), payload jsonb,
 ```
 office_contacts, office_companies, office_contact_businesses
 office_pipelines       id, business_id, name, stages jsonb
-office_deals           id, pipeline_id, contact_id, company_id?, stage, value, expected_commission, next_step, next_step_on, factory_project_id?
+office_deals           id, pipeline_id, contact_id, company_id?, stage, value, next_step, next_step_on, factory_project_id?
 office_activities      id, contact_id?, deal_id?, kind, body, occurred_at, external_ref
 office_content_items   id, business_id, channel[], format, status, idea, script, caption, assets jsonb, scheduled_at, published_url, metrics jsonb
 office_assets          id, business_id, storage_path, kind, tags[], campaign
@@ -164,16 +168,15 @@ bill_invoice_lines     id, invoice_id, product_id?, description, qty, unit_price
 bill_payments          id, entity_id, customer_id, invoice_id?, amount, method(stripe|ach|check|wire|cash), received_on, stripe_payment_id
 bill_subscriptions     id, entity_id, customer_id, product_id, status, interval, next_bill_on, stripe_subscription_id, factory_subscription_id?
 bill_time_entries      id, entity_id, customer_id, project_ref, minutes, rate, billed_invoice_id?
-bill_commissions       id, deal_id, gross, split jsonb, referral_fee, payee, status
 ```
 
 **Accounting**
 ```
 acct_entities          id, legal_name, ein_last4, fiscal_year_start, base_currency, parent_entity_id?
-acct_accounts          id, entity_id, code, name, type(asset|liability|equity|income|expense), subtype, is_trust, parent_id, active
+acct_accounts          id, entity_id, code, name, type(asset|liability|equity|income|expense), subtype, parent_id, active
 acct_journal_entries   id, entity_id, entry_date, memo, source_type(invoice|payment|bill|expense|bank|manual|intercompany), source_id, status(draft|posted|reversed), period_locked
 acct_journal_lines     id, entry_id, account_id, debit, credit, business_id?, contact_id?, memo   -- trigger: sum(debit)=sum(credit) per entry
-acct_bank_accounts     id, entity_id, account_id, plaid_item_ref (encrypted), mask, kind, is_trust
+acct_bank_accounts     id, entity_id, account_id, plaid_item_ref (encrypted), mask, kind
 acct_bank_txns         id, bank_account_id, posted_on, amount, description, plaid_txn_id, match_status, matched_entry_id
 acct_rules             id, entity_id, match jsonb, account_id, business_id
 acct_bills             id, entity_id, vendor, bill_date, due_date, total, status, expense_account_id, receipt_path
@@ -202,23 +205,23 @@ Reports (P&L, balance sheet, aging) are **Postgres views or functions** on top o
 
 ## 6. Build phases (updated)
 
-**Phase 0 — Restructure (½ week)**
+**Phase 0 — Restructure (½ week)** ✅ code built; database migration waiting for approval
 `/office` layout with an admin gate (reuse `requireUser` + `factory_admins`) and side navigation; "Office" in the nav for admins only; seed businesses and entities.
 
 **Phase 1 — Today agenda, Goals, Tasks, Reminders (1½ weeks)** *← start here*
 Goal tree, tasks, daily plans, reminders (in-app + email), Daily Planner, a Vercel Cron job, Google Calendar time-blocking, quick capture.
 
 **Phase 2 — Business feeds and Schedule (1 week)**
-Feed sources for each business (RSS, Google News, HUD NC listings, NCGA bills), Feed Agent with suggested actions, week view, recurring duties, Weekly Reviewer.
+Feed sources for each business (RSS, Google News, NCGA bills, RFPs), Feed Agent with suggested actions, week view, recurring duties, Weekly Reviewer.
 
 **Phase 3 — Invoicing and Billing (1½ weeks)**
 Customers, products, quotes, invoices, branded PDFs, Stripe pay links and webhooks, recurring billing, dunning, Collections Agent. *This starts posting to a simple ledger.*
 
 **Phase 4 — Accounting core (2–3 weeks)**
-Entities, chart of accounts, double-entry journal with a balance check, bills and expenses, receipt capture, Plaid bank feeds, reconciliation, Bookkeeper Agent, P&L / balance sheet / aging reports, period close, CPA export, trust ledger tracking.
+Entities, chart of accounts, double-entry journal with a balance check, bills and expenses, receipt capture, Plaid bank feeds, reconciliation, Bookkeeper Agent, P&L / balance sheet / aging reports, period close, CPA export.
 
 **Phase 5 — CRM (1–1½ weeks)**
-Contacts, pipelines for each business, Gmail timeline, lead intake from the three sites, deal → invoice / subscription / Factory project, commissions and referral fees.
+Contacts, pipelines for each business, Gmail timeline, lead intake from the three sites, deal → invoice / subscription / Factory project.
 
 **Phase 6 — Content Studio and Library (1½ weeks)**, then **Phase 7 — Publishing and Video (2 weeks)**
 
@@ -226,14 +229,11 @@ Contacts, pipelines for each business, Gmail timeline, lead intake from the thre
 
 Total for phases 0–5 is about 9–11 weeks of build time. Each phase can be used on its own.
 
-## 7. Decisions needed from you
+## 7. Decisions still open
 
-1. **Accounting approach (the biggest one):**
-   - **A. Build the books in the Office** (own ledger + Stripe + Plaid + CPA export). Full control and all in one place, but more work, and your CPA needs to sign off. *← recommended if you want everything in one hub*
-   - **B. Sync with QuickBooks Online.** The Office does invoices, goals and agenda, and QuickBooks keeps the official books. Less risk and CPA-friendly, but a second system and a monthly fee.
-2. **Entities:** which businesses are separate LLCs or EINs with their own bank accounts, and which share books?
-3. **Payments:** OK to use **Stripe** for invoices and subscriptions, and **Plaid** for bank feeds (both have monthly or per-transaction fees)?
-4. **Real estate money:** does Lightkeeper hold earnest money in a trust account? (This decides whether the trust ledger is needed in phase 4.)
-5. **Reminder channels:** email only, or also text (Twilio, small monthly cost) and phone push?
-6. **News sources:** any specific sites or keywords for each business you already watch?
-7. Earlier questions still open: video approach, first two social channels, morning brief delivery, team/CPA access, existing contacts to import, same Supabase project (recommended).
+1. **Payments:** OK to use **Stripe** for invoices and subscriptions, and **Plaid** for bank feeds (both charge fees)? Needed by phase 3.
+2. **Reminder channels:** email only, or also text (Twilio) and phone push?
+3. **News sources:** sites or keywords you already watch for each business.
+4. **Video approach** and **first two social channels** (phase 6).
+5. **Team / CPA access:** just you for now, or an assistant or CPA login?
+6. **Existing contacts** to import into the CRM?
