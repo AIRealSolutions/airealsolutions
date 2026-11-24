@@ -24,7 +24,7 @@ export default function GoogleCallback() {
     api<{ email: string | null }>("/api/integrations/google/exchange", { method: "POST", body: JSON.stringify({ code, state }) })
       .then((d) => {
         setMsg(`Connected ${d.email || "your Google account"}. Taking you back…`);
-        setTimeout(() => location.replace("/factory/connections"), 900);
+        setTimeout(() => location.replace(returnPath()), 900);
       })
       .catch((e) => {
         setFailed(true);
@@ -35,7 +35,16 @@ export default function GoogleCallback() {
   return (
     <section className="section">
       <p role="status">{msg}</p>
-      {failed && <a className="button button-primary" href="/factory/connections">Back to Connections</a>}
+      {failed && <a className="button button-primary" href={returnPath()}>Back to Connections</a>}
     </section>
   );
+}
+
+/** Back to where the connection was started (the Office or the Factory). */
+function returnPath() {
+  try {
+    const p = sessionStorage.getItem("airealsolutions.connections.return") || "";
+    if (p === "/office/factory-connections") return p;
+  } catch { /* storage unavailable */ }
+  return "/factory/connections";
 }

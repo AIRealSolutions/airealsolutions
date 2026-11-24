@@ -3,7 +3,7 @@
 export type OfficeModule = {
   slug: string;
   label: string;
-  group: "Plan" | "Run" | "Money" | "Grow";
+  group: "Plan" | "Run" | "Money" | "Factory" | "Grow";
   phase: number;
   ready: boolean;
   summary: string;
@@ -47,6 +47,12 @@ export const OFFICE_MODULES: OfficeModule[] = [
   { slug: "accounting", label: "Accounting", group: "Money", phase: 4, ready: true,
     summary: "Full double-entry books for AI Real Solutions LLC.",
     bullets: ["Chart of accounts and journal", "Bank feeds and reconciliation", "P&L, balance sheet, cash flow, AR/AP aging", "Each venture and client tracked as its own line", "Month-end close and CPA export"] },
+  { slug: "factory", label: "Projects", group: "Factory", phase: 0, ready: true,
+    summary: "Everything being built in the Software Factory.", bullets: [] },
+  { slug: "factory-accounts", label: "Accounts & credits", group: "Factory", phase: 0, ready: true,
+    summary: "Factory customer accounts, promotions and credits.", bullets: [] },
+  { slug: "factory-connections", label: "Connections", group: "Factory", phase: 0, ready: true,
+    summary: "Google, GitHub, Vercel and Supabase accounts.", bullets: [] },
   { slug: "studio", label: "Content Studio", group: "Grow", phase: 6, ready: false,
     summary: "Social media, reels and YouTube for every brand.",
     bullets: ["Content calendar", "AI scripts, captions and shot lists", "Brand kit for each business"] },
