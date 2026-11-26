@@ -133,6 +133,15 @@ export default function FeedBoard() {
                     + {it.suggested_action.type}: {it.suggested_action.title}
                   </button>
                 )}
+                {it.business_id && it.status !== "actioned" && (
+                  <button type="button" className={styles.linkButton} onClick={async () => {
+                    try {
+                      const c = await officeInsert<{ id: string }>("office_content", { business_id: it.business_id, title: it.title.slice(0, 200), format: "post", status: "idea", source: "feed", feed_item_id: it.id, idea: [it.summary, safeHref(it.url)].filter(Boolean).join("\n\n") });
+                      await officePatch("office_feed_items", `id=eq.${it.id}`, { status: "actioned" });
+                      window.location.assign(`/office/studio/${c.id}`);
+                    } catch (e) { setError(e instanceof Error ? e.message : "Could not create the content idea."); }
+                  }}>→ Content idea</button>
+                )}
                 {it.status !== "saved" && it.status !== "actioned" && <button type="button" className={styles.linkButton} onClick={() => void setStatus(it, "saved")}>Save</button>}
                 {it.status !== "dismissed" && <button type="button" className={styles.linkButton} onClick={() => void setStatus(it, "dismissed")}>Dismiss</button>}
                 {(it.status === "dismissed" || it.status === "saved") && <button type="button" className={styles.linkButton} onClick={() => void setStatus(it, "new")}>Move to New</button>}
