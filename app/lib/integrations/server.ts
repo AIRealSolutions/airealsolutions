@@ -138,7 +138,8 @@ export function decryptJson<T>(payload: string): T {
 
 // ---- signed OAuth state ------------------------------------------------------
 
-export function signState(data: { uid: string; redirectUri: string }): string {
+/** `extra` carries a small value through the OAuth round trip (e.g. which business a channel is for). */
+export function signState(data: { uid: string; redirectUri: string; extra?: string }): string {
   const body = Buffer.from(
     JSON.stringify({ ...data, n: randomBytes(8).toString("hex"), exp: Date.now() + 10 * 60_000 }),
   ).toString("base64url");
@@ -146,16 +147,16 @@ export function signState(data: { uid: string; redirectUri: string }): string {
   return `${body}.${sig}`;
 }
 
-export function verifyState(state: string, uid: string): { redirectUri: string } {
+export function verifyState(state: string, uid: string): { redirectUri: string; extra: string } {
   const [body, sig] = (state || "").split(".");
   if (!body || !sig) throw new HttpError(400, "Invalid sign-in state.");
   const expected = createHmac("sha256", masterKey()).update(body).digest();
   const given = Buffer.from(sig, "base64url");
   if (given.length !== expected.length || !timingSafeEqual(given, expected)) throw new HttpError(400, "Invalid sign-in state.");
   const data = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
-  if (data.uid !== uid) throw new HttpError(403, "This Google sign-in was started by a different Factory account.");
-  if (typeof data.exp !== "number" || data.exp < Date.now()) throw new HttpError(400, "Google sign-in took too long. Try again.");
-  return { redirectUri: String(data.redirectUri) };
+  if (data.uid !== uid) throw new HttpError(403, "This sign-in was started by a different Factory account.");
+  if (typeof data.exp !== "number" || data.exp < Date.now()) throw new HttpError(400, "The sign-in took too long. Try again.");
+  return { redirectUri: String(data.redirectUri), extra: typeof data.extra === "string" ? data.extra : "" };
 }
 
 export async function readJson<T>(request: Request): Promise<T> {
