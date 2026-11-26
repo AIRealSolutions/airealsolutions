@@ -1,6 +1,6 @@
 # AI Real Solutions Back Office ("The Office") — Plan
 
-**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phases 0–5 and the Incubator live; production readiness and AI reviews built (run `docs/office-readiness.sql` in Supabase)
+**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phases 0–5, the Incubator and readiness live; Phase 6 built (run `docs/office-phase6.sql` in Supabase)
 
 ## 0. Decisions made (2026-11-24)
 
@@ -243,7 +243,9 @@ Goal tree, tasks, daily plans, reminders (in-app + email), Daily Planner, a Verc
 - Won deals: create a draft invoice (billing customer created or reused) or a Factory client project in Discovery.
 - Morning job: reminders for due next steps and deals quiet for 2+ weeks. Nothing is sent automatically.
 
-**Phase 6 — Content Studio and Library (1½ weeks)**, then **Phase 7 — Publishing and Video (2 weeks)**
+**Phase 6 — Content Studio and Library (1½ weeks)**, then **Phase 7 — Publishing and Video (2 weeks)** ✅ built (run `docs/office-phase6.sql`)
+- Brand kit for each business (voice, audience, colors, hashtags, disclaimers, logo); content calendar and pipeline (idea → drafting → ready → scheduled → published); AI ideas from the marketing plan, brand kit and Feed; AI writer for reels, Shorts, YouTube, posts, carousels, blogs and emails; schedule with a publish reminder; results tracking; Feed items become content ideas in one click.
+- Library: private Supabase Storage for logos, images, video and documents, tagged by business; attach to content; 7-day share links.
 
 **Phase 8 — Agents Desk, roles (assistant, CPA), text messages and phone push, phone-friendly polish**
 

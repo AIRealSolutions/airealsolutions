@@ -338,3 +338,42 @@ a.feedTitle:hover{color:var(--brand);text-decoration:underline}
 .starters button:hover{border-color:var(--brand)}
 .chatInput{display:flex;gap:10px;align-items:flex-end;border-top:1px solid var(--line);padding-top:12px}
 @media(max-width:600px){.msgUser,.msgAdvisor{max-width:100%}.chatInput{flex-direction:column;align-items:stretch}}
+/* ---- Phase 6: Content Studio & Library ---- */
+.studioCal{display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:start}
+.monthGrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.monthHead{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:4px 6px}
+.monthDay{background:var(--surface);border:1px solid var(--line);border-radius:10px;min-height:110px;padding:6px;display:grid;gap:4px;align-content:start;min-width:0}
+.monthOther{opacity:.45}
+.monthNum{font-size:.8rem;font-weight:800;color:var(--muted)}
+.calChip{display:grid;grid-template-columns:auto 1fr;gap:4px;align-items:center;font-size:.74rem;border-radius:7px;padding:3px 5px;background:#eef3f9;color:var(--ink);min-width:0}
+.calChip>span:last-child{grid-column:1 / -1;justify-self:start}
+.calChipText{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.calChip:hover{outline:1px solid var(--brand)}
+.cs_idea{background:#f1f2f4}
+.cs_drafting{background:#fff7e6}
+.cs_ready{background:#eef3ff}
+.cs_scheduled{background:#dbe7ff}
+.cs_published{background:#d9f2ee}
+.undated{position:sticky;top:12px;max-height:80vh;overflow-y:auto}
+.ideaRow{display:grid!important;grid-template-columns:22px 1fr;gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid var(--line)}
+.ideaRow>div{display:grid;gap:3px}
+.ideaRow p{margin:2px 0 0!important;color:var(--ink)!important}
+.ideaRow input{margin-top:4px;width:18px;height:18px}
+.swatches{display:flex;gap:6px;align-items:flex-end;padding-bottom:10px}
+.swatches span{width:28px;height:28px;border-radius:8px;border:1px solid var(--line)}
+.titleInput{width:100%;font:inherit;font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:800;letter-spacing:-.03em;border:1px solid transparent;border-radius:12px;background:transparent;color:var(--ink);padding:2px 6px;margin-left:-6px}
+.titleInput:hover,.titleInput:focus{border-color:var(--line);background:#fff}
+.thumbGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:8px}
+.thumb{display:grid;gap:4px;margin:0;border:1px solid var(--line);border-radius:10px;padding:6px;background:#fff;font:inherit;text-align:left;cursor:pointer;min-width:0}
+.thumb img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;background:#f1f4f9}
+.thumb figcaption{display:grid;gap:2px;font-size:.72rem;overflow-wrap:anywhere}
+.thumbIcon{display:grid;place-items:center;aspect-ratio:1;font-size:1.8rem;background:#f1f4f9;border-radius:6px}
+.thumbName{font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.libraryGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-top:12px}
+.libraryCard{gap:6px;padding:12px}
+.libraryPreview{border:0;padding:0;background:none;cursor:pointer}
+.libraryPreview img,.libraryPreview .thumbIcon{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:#f1f4f9}
+@media(max-width:1000px){.studioCal{grid-template-columns:1fr}.undated{position:static}}
+@media(max-width:700px){.monthGrid{grid-template-columns:repeat(7,minmax(44px,1fr));overflow-x:auto}.monthDay{min-height:70px;padding:3px}.calChip{grid-template-columns:1fr}.calChip>span:nth-child(2),.calChip>span:last-child{display:none}}
+.field{align-content:start}
+.calChip>span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis}
