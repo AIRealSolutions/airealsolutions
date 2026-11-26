@@ -1,0 +1,97 @@
+{
+  "brand": {
+    "name": "Harbor Home Services",
+    "tagline": "Repairs and upkeep for coastal homes, booked in two minutes.",
+    "primary_color": "#0f4c81",
+    "accent_color": "#f2a93b",
+    "tone": "warm and plain-spoken"
+  },
+  "pages": [
+    {
+      "route": "/",
+      "title": "Home",
+      "nav_label": "Home",
+      "sections": [
+        { "type": "hero", "heading": "Home repairs without the runaround", "body": "Tell us what needs fixing. We confirm a time the same day and send a licensed tech.", "items": [], "form": "", "entity": "", "cta_label": "Request service", "cta_route": "/contact" },
+        { "type": "features", "heading": "What we handle", "body": "", "items": [
+          { "title": "Storm prep", "body": "Shutters, gutters and roof checks before the season.", "value": "", "points": [] },
+          { "title": "Plumbing", "body": "Leaks, water heaters and fixtures.", "value": "", "points": [] },
+          { "title": "Rental turnovers", "body": "Paint, patch and clean between tenants.", "value": "", "points": [] }
+        ], "form": "", "entity": "", "cta_label": "", "cta_route": "" },
+        { "type": "steps", "heading": "How it works", "body": "", "items": [
+          { "title": "Send a request", "body": "Two minutes, from your phone.", "value": "", "points": [] },
+          { "title": "Pick a time", "body": "We call or text to confirm.", "value": "", "points": [] },
+          { "title": "Job done", "body": "Photos and an invoice when we finish.", "value": "", "points": [] }
+        ], "form": "", "entity": "", "cta_label": "", "cta_route": "" },
+        { "type": "stats", "heading": "Sample numbers", "body": "Example figures for the template; replace with real ones.", "items": [
+          { "title": "Average reply time", "body": "", "value": "2 hrs", "points": [] },
+          { "title": "Service area towns", "body": "", "value": "12", "points": [] }
+        ], "form": "", "entity": "", "cta_label": "", "cta_route": "" },
+        { "type": "testimonials", "heading": "What customers say", "body": "Sample quotes for the template.", "items": [
+          { "title": "A homeowner", "body": "They came the next morning and fixed it in an hour.", "value": "", "points": [] }
+        ], "form": "", "entity": "", "cta_label": "", "cta_route": "" },
+        { "type": "cta", "heading": "Something need fixing?", "body": "Send a request and we will be in touch today.", "items": [], "form": "", "entity": "", "cta_label": "Request service", "cta_route": "/contact" }
+      ]
+    },
+    {
+      "route": "/pricing",
+      "title": "Pricing",
+      "nav_label": "Pricing",
+      "sections": [
+        { "type": "pricing", "heading": "Simple pricing", "body": "Example plans for the template.", "items": [
+          { "title": "Single visit", "body": "One job, any size.", "value": "$95 call-out", "points": ["First hour included", "Photos of the work"] },
+          { "title": "Care plan", "body": "For owners and landlords.", "value": "$39/mo", "points": ["Seasonal checkups", "Priority booking", "10% off repairs"] }
+        ], "form": "", "entity": "", "cta_label": "Request service", "cta_route": "/contact" },
+        { "type": "faq", "heading": "Questions", "body": "", "items": [
+          { "title": "Are you licensed and insured?", "body": "Yes. Certificates are available on request.", "value": "", "points": [] },
+          { "title": "Do you work weekends?", "body": "For emergencies, yes.", "value": "", "points": [] }
+        ], "form": "", "entity": "", "cta_label": "", "cta_route": "" }
+      ]
+    },
+    {
+      "route": "/contact",
+      "title": "Request service",
+      "nav_label": "Request service",
+      "sections": [
+        { "type": "text", "heading": "Request service", "body": "Tell us what you need. We reply the same business day.", "items": [], "form": "", "entity": "", "cta_label": "", "cta_route": "" },
+        { "type": "form", "heading": "", "body": "", "items": [], "form": "service_request", "entity": "", "cta_label": "", "cta_route": "" }
+      ]
+    },
+    {
+      "route": "/dashboard",
+      "title": "Dashboard",
+      "nav_label": "Dashboard",
+      "sections": [
+        { "type": "table", "heading": "Service requests", "body": "Every request sent on the site.", "items": [], "form": "", "entity": "requests", "cta_label": "", "cta_route": "" }
+      ]
+    }
+  ],
+  "entities": [
+    {
+      "key": "requests",
+      "label": "Requests",
+      "fields": [
+        { "key": "name", "label": "Name", "type": "text", "required": true, "options": [] },
+        { "key": "email", "label": "Email", "type": "email", "required": true, "options": [] },
+        { "key": "phone", "label": "Phone", "type": "phone", "required": false, "options": [] },
+        { "key": "service", "label": "Service", "type": "select", "required": true, "options": ["Storm prep", "Plumbing", "Rental turnover", "Other"] },
+        { "key": "details", "label": "What needs doing?", "type": "textarea", "required": false, "options": [] }
+      ]
+    }
+  ],
+  "forms": [
+    { "key": "service_request", "entity": "requests", "title": "Service request", "submit_label": "Send request", "success_message": "Thanks! We'll confirm a time today.", "fields": ["name", "email", "phone", "service", "details"] }
+  ],
+  "automations": [
+    { "trigger": "New service request", "action": "Email the owner with the request details", "needs_approval": false }
+  ],
+  "demo_data": [
+    {
+      "entity": "requests",
+      "rows": [
+        { "name": "Jordan Lee", "email": "jordan@example.com", "phone": "910-555-0142", "service": "Plumbing", "details": "Kitchen sink drips." },
+        { "name": "Sam Patel", "email": "sam@example.com", "phone": "", "service": "Storm prep", "details": "Shutters before September." }
+      ]
+    }
+  ]
+}

@@ -2,19 +2,14 @@
 // POST { project: "<slug>" } with the Factory session as `Authorization: Bearer <jwt>`.
 // Any project member may run it; it spends that member's Factory Credits.
 import { runSpecAgent, type SpecContext, type SynthesisBody } from "../../../lib/agents/spec-agent";
+import { creditCost, pickModel, projectEvent } from "../../../lib/agents/runs";
 import { HttpError, errorResponse, readJson, requireUser, serviceRpc, userRest, type FactoryUser } from "../../../lib/integrations/server";
 
 export const maxDuration = 300; // long syntheses can take a few minutes
 
 const AGENT = "factory_manager";
 const STAGE = "synthesis";
-const DEFAULT_MODEL = "claude-opus-5-5";
-const EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const;
-type Effort = (typeof EFFORTS)[number];
-
 type Project = SpecContext["project"] & { id: string; slug: string };
-type ResolvedModel = { api_model: string; provider: string; reasoning_effort: string | null; source: string | null };
-type CatalogModel = { api_model: string; input_usd_per_mtok: number | null; output_usd_per_mtok: number | null; credit_multiplier: number | null };
 
 /** GET: is the Spec Agent configured on this deployment? Lets the UI choose AI vs template. */
 export async function GET() {
@@ -45,8 +40,8 @@ export async function POST(request: Request) {
       throw new HttpError(400, "This project has no saved onboarding yet. Finish onboarding at /build and save it to the Factory first.");
     }
 
-    const { model, effort, prices, multiplier, source } = await pickModel(user, project.id);
-    const credits = await creditCost(user, multiplier);
+    const { model, effort, prices, multiplier, source } = await pickModel(user, project.id, { stage: STAGE, agent: AGENT, task: "product_synthesis" });
+    const credits = await creditCost(user, AGENT, multiplier, 150);
 
     // Reserve credits as the user (checks access and balance), then always settle as the server.
     const runId = await userRest<string>(user, "rpc/factory_agent_run_reserve", {
@@ -94,7 +89,7 @@ export async function POST(request: Request) {
         p_result_summary: `Product Synthesis v${version} drafted`,
         p_metadata: { synthesis_id: rows[0]?.id, version, effort, model_source: source, fell_back: result.fellBack, duration_ms: Date.now() - started, usage: result.usage },
       });
-      await audit(user, project.id, { version, agent_run_id: runId, model: result.model, credits });
+      await projectEvent(user, project.id, "synthesis.generated", { version, agent_run_id: runId, model: result.model, credits });
 
       return Response.json({
         synthesis: rows[0],
@@ -149,72 +144,10 @@ async function loadContext(user: FactoryUser, project: Project): Promise<SpecCon
   };
 }
 
-/** Use the Factory's model routing (factory_resolve_model); fall back to Claude Opus 5.5. */
-async function pickModel(user: FactoryUser, projectId: string) {
-  let model = DEFAULT_MODEL;
-  let effort: Effort = "high";
-  let source = "default";
-  try {
-    const rows = await userRest<ResolvedModel[]>(user, "rpc/factory_resolve_model", {
-      method: "POST",
-      body: JSON.stringify({ p_project: projectId, p_stage: STAGE, p_agent: AGENT, p_task: "product_synthesis" }),
-    });
-    const r = rows[0];
-    if (r?.provider === "anthropic" && r.api_model) {
-      model = r.api_model;
-      source = r.source || "catalog";
-    }
-    if (r?.reasoning_effort && (EFFORTS as readonly string[]).includes(r.reasoning_effort)) effort = r.reasoning_effort as Effort;
-  } catch (e) {
-    console.error("[spec-agent] model routing unavailable, using default", e);
-  }
-  let prices: { input: number; output: number } | null = null;
-  let multiplier = 1;
-  try {
-    const cat = await userRest<CatalogModel[]>(
-      user,
-      `factory_ai_models?api_model=eq.${encodeURIComponent(model)}&select=api_model,input_usd_per_mtok,output_usd_per_mtok,credit_multiplier&limit=1`,
-    );
-    const m = cat[0];
-    if (m?.input_usd_per_mtok != null && m.output_usd_per_mtok != null) prices = { input: Number(m.input_usd_per_mtok), output: Number(m.output_usd_per_mtok) };
-    if (m?.credit_multiplier != null && Number(m.credit_multiplier) > 0) multiplier = Number(m.credit_multiplier);
-  } catch {
-    /* catalog prices are optional; spec-agent has list prices */
-  }
-  return { model, effort, prices, multiplier, source };
-}
-
-/** Credits = the Factory Manager's catalog estimate x the model's credit multiplier. */
-async function creditCost(user: FactoryUser, multiplier: number) {
-  let base = 150;
-  try {
-    const rows = await userRest<{ default_credit_estimate: number }[]>(
-      user,
-      `factory_agent_specialties?code=eq.${AGENT}&select=default_credit_estimate&limit=1`,
-    );
-    if (rows[0]?.default_credit_estimate > 0) base = rows[0].default_credit_estimate;
-  } catch {
-    /* keep default */
-  }
-  return Math.max(1, Math.round(base * multiplier));
-}
-
 async function latestVersion(user: FactoryUser, projectId: string) {
   const rows = await userRest<{ version: number }[]>(
     user,
     `factory_product_syntheses?project_id=eq.${projectId}&select=version&order=version.desc&limit=1`,
   );
   return rows[0]?.version ?? 0;
-}
-
-async function audit(user: FactoryUser, projectId: string, detail: object) {
-  try {
-    await userRest(user, "factory_project_events", {
-      method: "POST",
-      headers: { Prefer: "return=minimal" },
-      body: JSON.stringify({ project_id: projectId, actor_id: user.id, event_type: "synthesis.generated", detail }),
-    });
-  } catch (e) {
-    console.error("[spec-agent] audit log failed", e);
-  }
 }
