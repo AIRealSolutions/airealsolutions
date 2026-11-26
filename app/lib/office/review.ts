@@ -1,6 +1,7 @@
 // Weekly review: what happened Monday-Sunday, and proposed focus + week goals for next week.
 import { officeAiConfigured, runWeeklyReview, type WeeklyReview } from "../agents/office-agents";
 import { addDays, isoWeekday, tzOffset, type Rest } from "./server";
+import { logged } from "./agent-log";
 
 /** Monday of the week containing `date`. */
 export const weekStartOf = (date: string) => addDays(date, 1 - isoWeekday(date));
@@ -30,7 +31,7 @@ export async function buildReview(rest: Rest, weekStart: string, mode: "ai" | "q
 
   if (mode === "ai" && officeAiConfigured()) {
     try {
-      const { data, usage } = await runWeeklyReview({
+      const { data, usage } = await logged(rest, "weekly-review", () => runWeeklyReview({
         week: `${weekStart} to ${weekEnd}`,
         businesses: businesses.map(({ id: _id, ...b }) => b),
         tasks_completed: done.map((t) => ({ title: t.title, business_slug: slug(t.business_id) })),
@@ -38,7 +39,7 @@ export async function buildReview(rest: Rest, weekStart: string, mode: "ai" | "q
         tasks_open_count_by_business: Object.fromEntries(businesses.map((b) => [b.slug, open.filter((t) => t.business_id === b.id).length])),
         goals: goals.map((g) => ({ ...g, business_slug: slug(g.business_id), business_id: undefined })),
         daily_reflections: plans.filter((p) => p.reflection),
-      });
+      }));
       const slugs = new Set(businesses.map((b) => b.slug));
       review = {
         summary: String(data.summary || "").slice(0, 2000),

@@ -3,6 +3,7 @@
 import { officeAiConfigured, runReceiptReader } from "../../../../lib/agents/office-agents";
 import { errorResponse, HttpError, readJson, requireAdmin, SUPABASE_KEY, SUPABASE_URL } from "../../../../lib/integrations/server";
 import { asUser } from "../../../../lib/office/server";
+import { logged } from "../../../../lib/office/agent-log";
 
 export const maxDuration = 60;
 const TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
       rest<{ code: string; name: string }[]>("acct_accounts?type=eq.expense&active=eq.true&select=code,name&order=code.asc"),
       rest<{ slug: string; name: string }[]>("office_businesses?select=slug,name"),
     ]);
-    const { data } = await runReceiptReader({ mediaType, base64: buf.toString("base64") }, accounts, businesses);
+    const { data } = await logged(rest, "receipt-reader", () => runReceiptReader({ mediaType, base64: buf.toString("base64") }, accounts, businesses));
     return Response.json({ receipt: data });
   } catch (e) {
     return errorResponse(e);

@@ -4,6 +4,7 @@ import { listEventsBetween } from "../integrations/google";
 import { HttpError, type FactoryUser } from "../integrations/server";
 import { quickPlan } from "./quick-plan";
 import { addDays, loadPlanContext, localTime, savePlan, tzOffset, type PlanEvent, type Rest } from "./server";
+import { logged } from "./agent-log";
 
 /** Today's Google Calendar events as local "HH:MM" blocks. Never throws: returns a note instead. */
 export async function todaysEvents(user: FactoryUser, date: string): Promise<{ events: PlanEvent[]; note: string | null }> {
@@ -26,7 +27,7 @@ export async function buildPlan(rest: Rest, date: string, events: PlanEvent[], c
   let warning: string | null = calendarNote;
   if (mode === "ai" && officeAiConfigured()) {
     try {
-      const { plan, usage } = await runDailyPlanner(ctx);
+      const { plan, usage } = await logged(rest, "daily-planner", () => runDailyPlanner(ctx));
       const row = await savePlan(rest, date, plan, { source: "ai", model: usage.model, usage });
       return { plan: row, source: "ai" as const, warning };
     } catch (e) {

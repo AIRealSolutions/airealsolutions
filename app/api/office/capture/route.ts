@@ -1,8 +1,9 @@
 // Quick capture. POST { text } as a signed-in admin. AI files it as a task, reminder or note;
 // without AI it is saved as a note so nothing is lost.
 import { officeAiConfigured, runCapture } from "../../../lib/agents/office-agents";
-import { HttpError, errorResponse, readJson, requireAdmin } from "../../../lib/integrations/server";
-import { asUser, officeDate, weekdayName } from "../../../lib/office/server";
+import { HttpError, errorResponse, readJson } from "../../../lib/integrations/server";
+import { asUser, officeDate, weekdayName, requireOffice, WORK } from "../../../lib/office/server";
+import { logged } from "../../../lib/office/agent-log";
 
 export const maxDuration = 60;
 
@@ -11,7 +12,7 @@ const LOCAL = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
 export async function POST(request: Request) {
   try {
-    const user = await requireAdmin(request);
+    const user = await requireOffice(request, WORK);
     const { text } = await readJson<{ text?: string }>(request);
     const capture = String(text ?? "").trim();
     if (!capture) throw new HttpError(400, "Type something to capture.");
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
     }
 
     const today = officeDate();
-    const { data: c, usage } = await runCapture(capture, today, weekdayName(today), businesses.map(({ slug, name }) => ({ slug, name })));
+    const { data: c, usage } = await logged(rest, "quick-capture", () => runCapture(capture, today, weekdayName(today), businesses.map(({ slug, name }) => ({ slug, name }))));
     const biz = businesses.find((b) => b.slug === c.business_slug) || null;
     const title = (c.title || capture).trim().slice(0, 200);
     let record;

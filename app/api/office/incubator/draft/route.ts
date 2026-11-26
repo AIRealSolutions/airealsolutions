@@ -1,17 +1,18 @@
 // Draft a plan document for one business with AI. POST { business_id, kind } as an admin.
 // Saves a new draft version and returns it (with readiness gaps found).
 import { officeAiConfigured, runVentureDoc } from "../../../../lib/agents/office-agents";
-import { errorResponse, HttpError, readJson, requireAdmin } from "../../../../lib/integrations/server";
-import { asUser } from "../../../../lib/office/server";
+import { errorResponse, HttpError, readJson } from "../../../../lib/integrations/server";
+import { asUser, requireOffice, WORK } from "../../../../lib/office/server";
 import { loadVentureContext } from "../../../../lib/office/venture-context";
 import { DOC_SECTIONS, docKindsFor, type DocKind } from "../../../../lib/office/venture-docs";
+import { logged } from "../../../../lib/office/agent-log";
 
 export const maxDuration = 300;
 const UUID = /^[0-9a-f-]{36}$/i;
 
 export async function POST(request: Request) {
   try {
-    const user = await requireAdmin(request);
+    const user = await requireOffice(request, WORK);
     const { business_id, kind } = await readJson<{ business_id?: string; kind?: DocKind }>(request);
     if (!business_id || !UUID.test(business_id) || !kind || !DOC_SECTIONS[kind]) throw new HttpError(400, "business_id and kind are required.");
     if (!officeAiConfigured()) throw new HttpError(503, "AI is not set up on the server (ANTHROPIC_API_KEY).");
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
     if (!docKindsFor(biz.relationship).includes(kind)) throw new HttpError(400, "That document doesn't apply to a client business.");
 
     const outline = DOC_SECTIONS[kind];
-    const { data, usage } = await runVentureDoc(kind, outline, material);
+    const { data, usage } = await logged(rest, "plan-drafter", () => runVentureDoc(kind, outline, material));
     const sections = outline.map((o) => ({ key: o.key, title: o.title, body: String(data.sections.find((s) => s.key === o.key)?.body || "").trim().slice(0, 12000) }));
     const existing = new Set(items.map((i) => `${i.track}|${i.title.toLowerCase()}`));
     const gaps = (data.gaps || [])

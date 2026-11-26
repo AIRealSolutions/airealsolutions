@@ -1,6 +1,6 @@
 # AI Real Solutions Back Office ("The Office") — Plan
 
-**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phases 0–5, the Incubator and readiness live; Phase 6 live; Phase 7 built (run `docs/office-phase6.sql` then `docs/office-phase7.sql` in Supabase)
+**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phases 0–5, the Incubator and readiness live; Phases 6–7 live; Phase 8 built (run `docs/office-phase6.sql`, `office-phase7.sql`, then `office-phase8.sql` in Supabase)
 
 ## 0. Decisions made (2026-11-24)
 
@@ -255,7 +255,11 @@ Goal tree, tasks, daily plans, reminders (in-app + email), Daily Planner, a Verc
 - Reel maker: three templates (text cards, photo slideshow, video + captions) built in the browser from the brand kit (colors, logo, disclaimers) and the draft, with optional music; recorded as MP4 in Chrome/Edge/Safari (WebM elsewhere), saved to the Library with a JPEG cover and attached to the piece.
 - Limits: until the Google project passes YouTube's API audit, uploads from it are locked to private; Meta needs App Review for `pages_manage_posts` and `instagram_content_publish` before anyone but app admins/testers can use it (the owner, as app admin, can post right away). Files are capped at 50 MB by the Library.
 
-**Phase 8 — Agents Desk, roles (assistant, CPA), text messages and phone push, phone-friendly polish**
+**Phase 8 — Agents Desk, roles, text messages and phone push, phone polish** ✅ built (run `docs/office-phase8.sql`)
+- **Roles:** owner (Factory admins), assistant (Plan, Run, Grow; can publish and use the agents; no money, Factory, connections, team or settings) and CPA (Money, read-only, including receipts). Enforced by row-level security through `office_role()`, `office_can_work()`; API routes check the role with `requireOffice`. Team page adds people by email; they sign up or sign in with that email and land in the Office. Pause or remove takes effect on their next click.
+- **Agents Desk:** every AI run logged (`office_agent_runs`: agent, model, tokens, estimated cost at list prices, time, fallback, errors); totals for today, 7 days and the month against an optional monthly budget (agents refuse new work past it); per-agent table; recent runs; and *Waiting on you*: AI-suggested bank categories, failed posts, content ready to schedule, deal follow-ups due, news with a suggested action, AI-proposed checklist items, due reminders and overdue tasks. Agents only draft and suggest.
+- **Phone notifications:** Web Push (RFC 8291/8292, no third-party service) for reminders when they come due, failed posts and the morning plan; per-device on/off and test on Settings. **Text messages** through Twilio for reminders and/or alerts to one number. Reminders ping from `/api/office/cron/tick` every 10 minutes when the pg_cron scheduler is on, otherwise with the morning job; snoozing re-arms them.
+- **Phone polish:** installable app (manifest, icons, service worker scoped to `/office`), sticky top menu, finger-sized taps, safe-area padding for notched phones, 16px fields so iOS doesn't zoom.
 
 Total for phases 0–5 is about 9–11 weeks of build time. Each phase can be used on its own.
 

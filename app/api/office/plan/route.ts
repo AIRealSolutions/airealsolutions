@@ -1,8 +1,8 @@
 // Daily Planner. POST { mode?: "ai" | "quick" } as a signed-in admin; builds and saves today's plan.
 import { officeAiConfigured } from "../../../lib/agents/office-agents";
-import { errorResponse, readJson, requireAdmin } from "../../../lib/integrations/server";
+import { errorResponse, readJson } from "../../../lib/integrations/server";
 import { buildPlan, todaysEvents } from "../../../lib/office/planner";
-import { asUser, officeDate } from "../../../lib/office/server";
+import { asUser, officeDate, requireOffice, WORK } from "../../../lib/office/server";
 
 export const maxDuration = 120;
 
@@ -12,7 +12,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await requireAdmin(request);
+    const user = await requireOffice(request, WORK);
     const body = await readJson<{ mode?: string }>(request).catch(() => ({ mode: undefined }));
     const date = officeDate();
     const { events, note } = await todaysEvents(user, date);

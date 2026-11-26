@@ -1,0 +1,21 @@
+{
+  "name": "The Office · AI Real Solutions",
+  "short_name": "The Office",
+  "description": "Back office for AI Real Solutions LLC: today's plan, tasks, reminders, CRM, content and the books.",
+  "id": "/office",
+  "start_url": "/office",
+  "scope": "/office",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    { "src": "/office-icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/office-icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/office-icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Today", "url": "/office" },
+    { "name": "Tasks", "url": "/office/tasks" },
+    { "name": "Reminders", "url": "/office/reminders" }
+  ]
+}

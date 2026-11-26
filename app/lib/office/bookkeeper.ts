@@ -2,6 +2,7 @@
 // Suggestions are never posted on their own; the owner accepts them on the Banking screen.
 import { officeAiConfigured, runBookkeeper } from "../agents/office-agents";
 import type { Rest } from "./server";
+import { logged } from "./agent-log";
 
 type Txn = { id: string; entity_id: string; posted_on: string; amount_cents: number; description: string; merchant: string | null; plaid_category: string | null };
 
@@ -35,11 +36,11 @@ export async function suggestCategories(rest: Rest) {
     const chart = accounts.filter((a) => a.entity_id === entity && a.code !== "1100" && a.code !== "2000");
     const batch = left.filter((t) => t.entity_id === entity).slice(0, 80);
     try {
-      const { data } = await runBookkeeper(
+      const { data } = await logged(rest, "bookkeeper", () => runBookkeeper(
         chart.map((a) => ({ code: a.code, name: a.name, type: a.type })),
         businesses.map((b) => ({ slug: b.slug, name: b.name })),
         batch.map((t, i) => ({ i, date: t.posted_on, amount_cents: t.amount_cents, description: t.description, merchant: t.merchant || "", bank_category: t.plaid_category || "" })),
-      );
+      ));
       for (const s of data.items || []) {
         const t = batch[s.i];
         const acc = chart.find((a) => a.code === s.account_code);
