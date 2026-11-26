@@ -77,7 +77,7 @@ export type SpecContext = {
 };
 
 /** Anthropic list prices, USD per million tokens, for models the catalog may route to. */
-const PRICES: Record<string, { input: number; output: number }> = {
+export const PRICES: Record<string, { input: number; output: number }> = {
   "claude-opus-5-5": { input: 4, output: 20 },
   "claude-opus-5": { input: 5, output: 25 },
   "claude-opus-4-8": { input: 5, output: 25 },

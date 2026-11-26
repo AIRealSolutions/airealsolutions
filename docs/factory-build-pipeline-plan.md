@@ -18,7 +18,8 @@ This plan picks up where `docs/factory-assembly-line.md` stops. That document se
 | Product synthesis (`ProductSynthesisPanel.tsx`) | **Spec Agent built (2026-11-10)**: "Generate with AI" calls `POST /api/factory/synthesis`. Template `make()` kept as "Template draft" and as the fallback when the server has no keys |
 | Architecture, economics, assembly-line records | Working, template-based |
 | `factory_agent_runs`, `factory_credit_ledger`, `factory_assembly_stages` | Tables exist; the Spec Agent records its runs and credits here |
-| Code generation, build/check loop, preview, graduation | **Not built** |
+| Site Spec + instant preview (`SiteSpecPanel.tsx`, `/preview/[slug]`) | **Built (2026-11-26)**: Site Agent or template, approve, share link, working forms and dashboard |
+| Code generation, build/check loop, deployed preview, graduation | **Not built** |
 
 All Factory database calls today come from the browser using the publishable key plus the user's session. That works for CRUD. Anything that holds a secret (LLM key, GitHub token, Vercel token, Supabase management token) has to run **server-side only**: Next.js route handlers or a background worker on Vercel, never in the browser.
 
@@ -82,6 +83,14 @@ Because the section types come from a fixed list, the LLM cannot invent things t
 - Forms write into a sandboxed shared table (`factory_preview_submissions`, scoped by project) so they **really work**: a visitor can submit a lead and see it show up on the demo dashboard.
 - Takes seconds and costs little, so the customer sees something on the same day as onboarding. This is the version to show early investors.
 
+**Built (2026-11-26).** Steps 2 and 3a work like this:
+- Files: `app/lib/site-spec.ts` (types, the fixed section and field lists, JSON schema, `sanitizeSiteSpec`, `templateSiteSpec`), `app/lib/agents/site-agent.ts` (Claude call), `app/api/factory/site-spec/route.ts`, `app/preview/[slug]/[[...path]]/page.tsx` + `PreviewSite.tsx` (renderer), `app/factory/projects/[id]/SiteSpecPanel.tsx` (Factory station, "Prototype" tab), `docs/factory-site-preview.sql` (applied as migration `factory_site_preview`). Shared helpers for model routing and credits moved to `app/lib/agents/runs.ts`.
+- Input: the latest **approved** Product Synthesis. `POST /api/factory/site-spec {project, mode}`: `mode: "ai"` runs the Site Agent as `software_architect` at stage `architecture` (task `site_spec`, 250 credits × model multiplier, reserve/settle like the Spec Agent); `mode: "template"` is free and needs no AI key (home, contact form, dashboard, built from the synthesis).
+- Section types: hero, features, steps, stats, pricing, testimonials, faq, text, cta, form, table. Field types: text, email, phone, number, money, date, textarea, select. Everything the model returns goes through `sanitizeSiteSpec`: unknown types, dangling form/entity references and bad routes are dropped.
+- Tables: `factory_site_specs` (versioned; draft → approved → superseded), `factory_preview_settings` (share on/off per project), `factory_preview_submissions`. Visitors never touch tables directly: `factory_preview_get`, `factory_preview_records` and `factory_preview_submit` (SECURITY DEFINER) decide access.
+- Who sees what: project members see any version (`?v=3` for a draft) and every submission. Anyone else sees only the latest approved version, only while sharing is on, and only the rows they sent themselves (a random visitor id in their browser). Submissions keep only the form's own fields, 2,000 characters each; limits are 20 per visitor per hour, 300 per project per hour and 5,000 stored per project.
+- Not yet: automations in the Site Spec are listed but not run by the preview; no PIN, invite token or view tracking (step 3).
+
 ### 3b. Code Agent: real code
 - Starts from a **starter template repo** (Next.js + Supabase auth + RLS + Tailwind + Resend email) rather than an empty folder. The agent fills in pages, components, SQL migrations and automations from the Site Spec.
 - Runs as a background job (not inside a page request): a route handler adds a row to a new `factory_build_jobs` table, and a worker (Vercel Function with long duration, or Vercel Sandbox) picks it up.
@@ -142,8 +151,8 @@ All with RLS through `factory_can_access_project`. Worker writes use the service
 - Per-job spend caps keep a looping agent from running up LLM cost.
 
 ## Build order (each step can ship on its own)
-1. **LLM Spec Agent**: server route plus Claude call behind the existing "Generate Product Synthesis" button, with the template as fallback. *Small; immediately makes onboarding smarter.*
-2. **Site Spec plus instant preview renderer** at `/preview/[slug]`, with working forms and demo data. *First thing a customer or investor can click.*
+1. ✅ **LLM Spec Agent**: server route plus Claude call behind the existing "Generate Product Synthesis" button, with the template as fallback. *Small; immediately makes onboarding smarter.*
+2. ✅ **Site Spec plus instant preview renderer** at `/preview/[slug]`, with working forms and demo data. *First thing a customer or investor can click.* (built 2026-11-26)
 3. **Investor share link**: PIN or invite, banner, summary page, view tracking.
 4. **Starter template repo** (Next.js + Supabase + Resend) with RLS and smoke tests already passing.
 5. **Build jobs plus Vercel Sandbox check loop** (typecheck, build, tests, advisors), with try limits and logs.
