@@ -17,6 +17,9 @@ export const SECTION_TYPES = [
 ] as const;
 export type SectionType = (typeof SECTION_TYPES)[number];
 
+/** Reserved preview route for the investor one-pager; a Site Spec page may not use it. */
+export const SUMMARY_ROUTE = "/investor-summary";
+
 export const FIELD_TYPES = ["text", "email", "phone", "number", "money", "date", "textarea", "select"] as const;
 export type FieldType = (typeof FIELD_TYPES)[number];
 
@@ -292,7 +295,7 @@ export function sanitizeSiteSpec(raw: unknown, fallbackName = "Your product"): S
   for (const p of arr(r.pages).slice(0, LIMITS.pages)) {
     const po = obj(p);
     const route = toRoute(po.route);
-    if (pages.some((x) => x.route === route)) continue;
+    if (route === SUMMARY_ROUTE || pages.some((x) => x.route === route)) continue;
     const sections: SiteSection[] = [];
     for (const s of arr(po.sections).slice(0, LIMITS.sections)) {
       const so = obj(s);

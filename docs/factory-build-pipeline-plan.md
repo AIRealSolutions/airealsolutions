@@ -19,6 +19,7 @@ This plan picks up where `docs/factory-assembly-line.md` stops. That document se
 | Architecture, economics, assembly-line records | Working, template-based |
 | `factory_agent_runs`, `factory_credit_ledger`, `factory_assembly_stages` | Tables exist; the Spec Agent records its runs and credits here |
 | Site Spec + instant preview (`SiteSpecPanel.tsx`, `/preview/[slug]`) | **Built (2026-11-26)**: Site Agent or template, approve, share link, working forms and dashboard |
+| Investor share links (`InvestorLinksPanel.tsx`, `?invite=`) | **Built (2026-11-26)**: per-person link, optional PIN, expiry, investor summary page, view tracking |
 | Code generation, build/check loop, deployed preview, graduation | **Not built** |
 
 All Factory database calls today come from the browser using the publishable key plus the user's session. That works for CRUD. Anything that holds a secret (LLM key, GitHub token, Vercel token, Supabase management token) has to run **server-side only**: Next.js route handlers or a background worker on Vercel, never in the browser.
@@ -89,7 +90,7 @@ Because the section types come from a fixed list, the LLM cannot invent things t
 - Section types: hero, features, steps, stats, pricing, testimonials, faq, text, cta, form, table. Field types: text, email, phone, number, money, date, textarea, select. Everything the model returns goes through `sanitizeSiteSpec`: unknown types, dangling form/entity references and bad routes are dropped.
 - Tables: `factory_site_specs` (versioned; draft → approved → superseded), `factory_preview_settings` (share on/off per project), `factory_preview_submissions`. Visitors never touch tables directly: `factory_preview_get`, `factory_preview_records` and `factory_preview_submit` (SECURITY DEFINER) decide access.
 - Who sees what: project members see any version (`?v=3` for a draft) and every submission. Anyone else sees only the latest approved version, only while sharing is on, and only the rows they sent themselves (a random visitor id in their browser). Submissions keep only the form's own fields, 2,000 characters each; limits are 20 per visitor per hour, 300 per project per hour and 5,000 stored per project.
-- Not yet: automations in the Site Spec are listed but not run by the preview; no PIN, invite token or view tracking (step 3).
+- Not yet: automations in the Site Spec are listed but not run by the preview.
 
 ### 3b. Code Agent: real code
 - Starts from a **starter template repo** (Next.js + Supabase auth + RLS + Tailwind + Resend email) rather than an empty folder. The agent fills in pages, components, SQL migrations and automations from the Site Spec.
@@ -118,6 +119,14 @@ If a step fails, the error output goes back to the Code Agent ("fix this"), up t
   - seeded demo data, clearly marked as demo.
 - **Investor share link**: `/preview/{slug}?invite=…`. Read-only or demo login, an optional PIN (same pattern as Golf Buddy), a banner reading "Prototype built by AI Real Solutions", and a one-page summary pulled from the synthesis and economics (problem, market, pricing, break-even).
 - View tracking (who opened the link, when, which pages) is stored in `factory_preview_views`, so the customer can see investor interest.
+
+**Investor links built (2026-11-26).** How the share link works now:
+- Files: `app/factory/projects/[id]/InvestorLinksPanel.tsx` (create, copy, PIN, show/hide numbers, turn off, recent views), `app/preview/[slug]/InvestorSummary.tsx` (one-pager at `/preview/<slug>/investor-summary`, printable), `docs/factory-preview-invites.sql` (migrations `factory_preview_invites`, `factory_preview_summary_skip_zeros`, `factory_preview_invites_has_pin`).
+- One link per person: `/preview/<slug>?invite=<token>` (random 144-bit token). It works even while public sharing is off and always shows the latest approved Site Spec. Options: a 4–8 digit PIN (bcrypt-hashed; 5 wrong tries lock the link for 15 minutes), expiry (7/30/90/365 days), the investor summary page, and the pricing and cost numbers. Turning a link off stops it at once, including passes already handed out.
+- `factory_preview_open` checks the token and PIN and hands out a 12-hour pass (`private.factory_preview_grants`), kept in the visitor's browser so the PIN is asked once. `factory_preview_get` / `_records` / `_submit` take that pass.
+- The investor summary is built in the database from the approved synthesis (summary, problem, users, outcomes, MVP features, automations, integrations, road to launch; not assumptions or open questions) and, when allowed, the economics row (price, setup, target customers and revenue, running cost, customers to break even, build cost, value to the customer). Economics fields left at 0 are hidden.
+- Views: every page a non-member opens is stored in `factory_preview_views` (per link, deduped within 30 seconds, capped at 500 per visitor per day); each link shows pages opened and last seen. Members' own visits are not counted. The banner reads "prepared for <name>".
+- Not yet: no demo login for the signed-in parts of a product (the dashboard section stands in for it), and no email alert when an investor opens a link.
 
 ### 6. Graduation: the product's own infrastructure
 Triggered by a human "Launch" approval and a paid plan. Each step is recorded in `factory_graduations`:
@@ -153,7 +162,7 @@ All with RLS through `factory_can_access_project`. Worker writes use the service
 ## Build order (each step can ship on its own)
 1. ✅ **LLM Spec Agent**: server route plus Claude call behind the existing "Generate Product Synthesis" button, with the template as fallback. *Small; immediately makes onboarding smarter.*
 2. ✅ **Site Spec plus instant preview renderer** at `/preview/[slug]`, with working forms and demo data. *First thing a customer or investor can click.* (built 2026-11-26)
-3. **Investor share link**: PIN or invite, banner, summary page, view tracking.
+3. ✅ **Investor share link**: PIN or invite, banner, summary page, view tracking. (built 2026-11-26)
 4. **Starter template repo** (Next.js + Supabase + Resend) with RLS and smoke tests already passing.
 5. **Build jobs plus Vercel Sandbox check loop** (typecheck, build, tests, advisors), with try limits and logs.
 6. **Push to branch, Vercel preview deployment**, URL saved back to the project.

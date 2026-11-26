@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { factoryToken } from "../../connections/session";
 import type { SiteSpec } from "../../../lib/site-spec";
+import InvestorLinksPanel from "./InvestorLinksPanel";
 
 const URL = "https://xqdsmbyealtammgmpsqe.supabase.co";
 const KEY = "sb_publishable_78q5LVudkA7u2hqsecLmAw_br2XlkUB";
@@ -203,6 +204,8 @@ export default function SiteSpecPanel({ projectSlug }: { projectSlug: string }) 
           </span>
         </div>
       )}
+
+      {approved && projectId && <InvestorLinksPanel projectId={projectId} projectSlug={projectSlug} />}
 
       {latest && <SpecSummary row={latest} />}
 

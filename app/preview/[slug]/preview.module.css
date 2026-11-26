@@ -412,3 +412,91 @@
     color: var(--muted);
   }
 }
+
+/* PIN screen */
+.pinForm {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 0 8px;
+}
+.pinForm input {
+  width: 160px;
+  padding: 12px 14px;
+  border: 1px solid #cdd5e1;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 1.2rem;
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+.pinButton {
+  padding: 12px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: #111827;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pinButton:disabled {
+  opacity: 0.6;
+}
+
+/* Investor summary */
+.summaryLink {
+  font-weight: 700;
+  color: var(--p);
+}
+.summary {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 16px 56px;
+}
+.summary > header {
+  margin-bottom: 28px;
+}
+.summary > section {
+  margin: 32px 0;
+}
+.summary section > p {
+  max-width: 760px;
+}
+.kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--p);
+}
+.lead {
+  font-size: 1.15rem;
+  color: var(--muted);
+  max-width: 760px;
+}
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.summaryGrid ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+@media print {
+  .banner,
+  .header,
+  .footer,
+  .linkButton {
+    display: none !important;
+  }
+  .summary {
+    padding-top: 0;
+  }
+  .card {
+    break-inside: avoid;
+  }
+}

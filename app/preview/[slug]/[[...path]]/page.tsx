@@ -13,11 +13,12 @@ export default async function PreviewPage({
   searchParams,
 }: {
   params: Promise<{ slug: string; path?: string[] }>;
-  searchParams: Promise<{ v?: string | string[] }>;
+  searchParams: Promise<{ v?: string | string[]; invite?: string | string[] }>;
 }) {
   const { slug, path } = await params;
-  const { v } = await searchParams;
+  const { v, invite } = await searchParams;
+  const token = (Array.isArray(invite) ? invite[0] : invite)?.trim().slice(0, 64) || null;
   const version = Number(Array.isArray(v) ? v[0] : v);
   const route = "/" + (path ?? []).map((p) => p.toLowerCase()).join("/");
-  return <PreviewSite slug={slug} route={route === "/" ? "/" : route.replace(/\/+$/, "")} version={Number.isInteger(version) && version > 0 ? version : null} />;
+  return <PreviewSite slug={slug} route={route === "/" ? "/" : route.replace(/\/+$/, "")} version={Number.isInteger(version) && version > 0 ? version : null} invite={token} />;
 }
