@@ -18,6 +18,8 @@ type Invite = {
   revoked_at: string | null;
   pin_locked_until: string | null;
   view_count: number;
+  notify_owner: boolean;
+  last_alerted_at: string | null;
   first_viewed_at: string | null;
   last_viewed_at: string | null;
   created_at: string;
@@ -37,7 +39,7 @@ async function rest<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 const when = (s: string | null) => (s ? new Date(s).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—");
-const COLS = "id,token,label,has_pin,show_summary,show_numbers,expires_at,revoked_at,pin_locked_until,view_count,first_viewed_at,last_viewed_at,created_at";
+const COLS = "id,token,label,has_pin,show_summary,show_numbers,expires_at,revoked_at,pin_locked_until,view_count,notify_owner,last_alerted_at,first_viewed_at,last_viewed_at,created_at";
 
 export default function InvestorLinksPanel({ projectId, projectSlug }: { projectId: string; projectSlug: string }) {
   const [invites, setInvites] = useState<Invite[]>([]);
@@ -129,7 +131,7 @@ export default function InvestorLinksPanel({ projectId, projectSlug }: { project
       <h3>Investor links</h3>
       <p>
         <small>
-          A private link for each person. It works even while public sharing is off, always shows the approved version, and you can see when they open it. Add a PIN for a second lock and send it separately.
+          A private link for each person. It works even while public sharing is off, always shows the approved version, and you can see when they open it. Add a PIN for a second lock and send it separately. You get an email the first time each link is opened (then at most every 12 hours).
         </small>
       </p>
 
@@ -199,6 +201,7 @@ export default function InvestorLinksPanel({ projectId, projectSlug }: { project
                     <small>
                       {i.revoked_at ? "Turned off" : !active(i) ? "Expired" : "Active"}
                       {i.has_pin ? " · PIN" : ""}
+                      {i.notify_owner ? " · email alerts" : ""}
                       {i.pin_locked_until && new Date(i.pin_locked_until) > new Date() ? " · locked (wrong PINs)" : ""}
                     </small>
                   </td>
@@ -213,6 +216,9 @@ export default function InvestorLinksPanel({ projectId, projectSlug }: { project
                       <>
                         <button style={small} onClick={() => copy(linkFor(i.token), "Link")}>Copy</button>
                         <button style={small} disabled={busy === i.id} onClick={() => void setPin(i)}>PIN</button>
+                        <button style={small} disabled={busy === i.id} onClick={() => void update(i, { notify_owner: !i.notify_owner }, i.notify_owner ? `No more emails when ${i.label} opens the link.` : `You'll get an email when ${i.label} opens the link.`)}>
+                          {i.notify_owner ? "Alerts on" : "Alerts off"}
+                        </button>
                         <button style={small} disabled={busy === i.id} onClick={() => void update(i, { show_numbers: !i.show_numbers }, i.show_numbers ? "Numbers hidden." : "Numbers shown.")}>
                           {i.show_numbers ? "Hide numbers" : "Show numbers"}
                         </button>

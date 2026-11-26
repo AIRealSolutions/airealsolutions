@@ -119,6 +119,8 @@ export default function PreviewSite({ slug, route, version, invite }: { slug: st
       if (r.error) throw new Error(r.error);
       if (r.grant && invite) {
         savePass(slug, { grant: r.grant, expires_at: r.expires_at || new Date(Date.now() + 12 * 3600_000).toISOString(), invite });
+        // Let the person who sent the link know it was opened (the server decides whether an email is due).
+        void fetch("/api/factory/preview-alert", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ grant: r.grant }), keepalive: true }).catch(() => null);
         return r.grant;
       }
       return null;

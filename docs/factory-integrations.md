@@ -71,7 +71,8 @@ Generate one (`openssl rand -base64 48`) and add it to Vercel as `INTEGRATIONS_E
 | `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_TEMPLATE_REPO` (optional) | Connections page, project repos |
 | `VERCEL_TOKEN`, `VERCEL_TEAM_ID` (if using a team) | Connections page, project hosting |
 | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_ORG_SLUG` (optional) | Connections page, project databases |
-| `ANTHROPIC_API_KEY`, `SUPABASE_SECRET_KEY` | Spec Agent |
+| `ANTHROPIC_API_KEY`, `SUPABASE_SECRET_KEY` | Spec Agent and Site Agent |
+| `RESEND_API_KEY`, `FACTORY_ALERT_FROM` (falls back to `OFFICE_BRIEF_FROM`), `SUPABASE_SECRET_KEY` | Email when an investor opens a preview link (`POST /api/factory/preview-alert`) |
 
 Redeploy after adding environment variables. A new variable only takes effect on the next deployment.
 

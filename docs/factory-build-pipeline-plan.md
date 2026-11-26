@@ -126,7 +126,8 @@ If a step fails, the error output goes back to the Code Agent ("fix this"), up t
 - `factory_preview_open` checks the token and PIN and hands out a 12-hour pass (`private.factory_preview_grants`), kept in the visitor's browser so the PIN is asked once. `factory_preview_get` / `_records` / `_submit` take that pass.
 - The investor summary is built in the database from the approved synthesis (summary, problem, users, outcomes, MVP features, automations, integrations, road to launch; not assumptions or open questions) and, when allowed, the economics row (price, setup, target customers and revenue, running cost, customers to break even, build cost, value to the customer). Economics fields left at 0 are hidden.
 - Views: every page a non-member opens is stored in `factory_preview_views` (per link, deduped within 30 seconds, capped at 500 per visitor per day); each link shows pages opened and last seen. Members' own visits are not counted. The banner reads "prepared for <name>".
-- Not yet: no demo login for the signed-in parts of a product (the dashboard section stands in for it), and no email alert when an investor opens a link.
+- Email alerts (`app/api/factory/preview-alert/route.ts`, `docs/factory-preview-alerts.sql`): when a link hands out a pass, the page pings the route; `factory_preview_alert_claim` (service role only) emails the link's creator on the first open, then at most once every 12 hours per link, while the link's "Alerts" switch is on. Sent through Resend from `FACTORY_ALERT_FROM` (or `OFFICE_BRIEF_FROM`); without `RESEND_API_KEY` nothing is sent and nothing breaks.
+- Not yet: no demo login for the signed-in parts of a product (the dashboard section stands in for it).
 
 ### 6. Graduation: the product's own infrastructure
 Triggered by a human "Launch" approval and a paid plan. Each step is recorded in `factory_graduations`:
