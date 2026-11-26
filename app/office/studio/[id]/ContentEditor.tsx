@@ -10,6 +10,9 @@ import {
   ASSET_SELECT, CHANNELS, CONTENT_SELECT, FORMATS, formatIcon, kindOf, libraryLinks, STATUSES, toLocalInput, uploadToLibrary,
   type Asset, type Content, type Draft, type Format, type Status,
 } from "../types";
+import type { BrandKit } from "../types";
+import Publish from "./Publish";
+import ReelMaker, { type ReelSpec } from "./ReelMaker";
 
 /** Which draft fields each format uses. */
 const FIELDS: Record<Format, (keyof Draft)[]> = {
@@ -31,7 +34,8 @@ const METRICS = ["views", "likes", "comments", "shares", "clicks", "leads"];
 
 export default function ContentEditor({ id }: { id: string }) {
   const { businesses } = useBusinesses();
-  const [c, setC] = useState<Content | null>(null);
+  const [c, setC] = useState<(Content & { reel?: ReelSpec }) | null>(null);
+  const [kit, setKit] = useState<BrandKit | null>(null);
   const [draft, setDraft] = useState<Draft>({});
   const [assets, setAssets] = useState<Asset[]>([]);
   const [links, setLinks] = useState<Record<string, string>>({});
@@ -45,16 +49,31 @@ export default function ContentEditor({ id }: { id: string }) {
 
   const load = useCallback(async () => {
     try {
-      const x = (await officeRest<Content[]>(`office_content?id=eq.${id}&select=${CONTENT_SELECT}&limit=1`))[0];
+      // `reel` arrives with phase 7; fall back so the editor still works before that migration.
+      const x = (await officeRest<(Content & { reel?: ReelSpec })[]>(`office_content?id=eq.${id}&select=${CONTENT_SELECT},reel&limit=1`)
+        .catch(() => officeRest<Content[]>(`office_content?id=eq.${id}&select=${CONTENT_SELECT}&limit=1`)))[0];
       if (!x) { setError("Content not found."); return; }
       const a = await officeRest<Asset[]>(`office_assets?or=(business_id.eq.${x.business_id},business_id.is.null)&select=${ASSET_SELECT}&order=created_at.desc&limit=100`);
       setC(x); setDraft(x.draft || {}); setAssets(a); setDirty(false);
+      officeRest<BrandKit[]>(`office_brand_kits?business_id=eq.${x.business_id}&select=*&limit=1`).then((k) => setKit(k[0] || null), () => setKit(null));
       setWhen(toLocalInput(x.scheduled_at)); setUrl(x.published_url || "");
       setMetrics(Object.fromEntries(METRICS.map((m) => [m, x.metrics?.[m] != null ? String(x.metrics[m]) : ""])));
       setLinks(await libraryLinks(a.filter((y) => y.kind === "image" || y.kind === "logo").map((y) => y.storage_path)));
     } catch (e) { setError(e instanceof Error ? e.message : "Could not load."); }
   }, [id]);
   useEffect(() => { void load(); }, [load]);
+  /** Status, results and media after publishing or a new reel, without touching unsaved draft edits. */
+  const refresh = useCallback(async () => {
+    try {
+      const x = (await officeRest<Content[]>(`office_content?id=eq.${id}&select=status,scheduled_at,published_at,published_url,metrics,asset_ids,business_id&limit=1`))[0];
+      if (!x) return;
+      setC((prev) => (prev ? { ...prev, status: x.status, scheduled_at: x.scheduled_at, published_at: x.published_at, published_url: x.published_url, metrics: x.metrics, asset_ids: x.asset_ids } : prev));
+      setMetrics(Object.fromEntries(METRICS.map((m) => [m, x.metrics?.[m] != null ? String(x.metrics[m]) : ""])));
+      const a = await officeRest<Asset[]>(`office_assets?or=(business_id.eq.${x.business_id},business_id.is.null)&select=${ASSET_SELECT}&order=created_at.desc&limit=100`);
+      setAssets(a);
+      setLinks(await libraryLinks(a.filter((y) => y.kind === "image" || y.kind === "logo").map((y) => y.storage_path)));
+    } catch { /* keep what is on screen */ }
+  }, [id]);
 
   const patch = async (change: Partial<Content>, note?: string) => {
     if (!c) return;
@@ -79,7 +98,7 @@ export default function ContentEditor({ id }: { id: string }) {
     const at = new Date(when).toISOString();
     await patch({ scheduled_at: at, status: "scheduled" });
     await officeInsert("office_reminders", { title: `Publish: ${c.title}${c.channels.length ? ` (${c.channels.join(", ")})` : ""}`, business_id: c.business_id, remind_at: at }).catch(() => undefined);
-    setMsg(`Scheduled for ${prettyDateTime(at)}. A reminder will show on Today; the Studio doesn't post for you yet.`);
+    setMsg(`Scheduled for ${prettyDateTime(at)}. A reminder will show on Today. To have the Office post it, use Publish to channels above.`);
   }
   async function publish() {
     if (!c) return;
@@ -174,15 +193,21 @@ export default function ContentEditor({ id }: { id: string }) {
 
         <div className={styles.stack}>
           <article className={styles.card}>
-            <h2>Publish</h2>
-            <div className={styles.formGrid}>
-              <label className={styles.field}>Publish on<input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} /></label>
-              <div style={{ alignSelf: "end" }}><button className="button button-secondary" onClick={() => void schedule()}>Schedule</button></div>
-              <label className={styles.field}>Published link<input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" /></label>
-              <div style={{ alignSelf: "end" }}><button className="button button-primary" onClick={() => void publish()}>Mark published</button></div>
-            </div>
+            <h2>Publish to channels</h2>
+            <Publish content={c} attached={attached} onChanged={refresh} />
+          </article>
+
+          <article className={styles.card}>
+            <details>
+              <summary className={styles.smallLink}>Other channels (TikTok, LinkedIn, X, website): schedule a reminder or mark published by hand</summary>
+              <div className={styles.formGrid} style={{ marginTop: 10 }}>
+                <label className={styles.field}>Reminder on<input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} /></label>
+                <div style={{ alignSelf: "end" }}><button className="button button-secondary" onClick={() => void schedule()}>Schedule reminder</button></div>
+                <label className={styles.field}>Published link<input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" /></label>
+                <div style={{ alignSelf: "end" }}><button className="button button-primary" onClick={() => void publish()}>Mark published</button></div>
+              </div>
+            </details>
             {c.published_at && <small className={styles.muted}>Published {prettyDateTime(c.published_at)}{c.published_url && /^https?:\/\//i.test(c.published_url) ? <> · <a className={styles.smallLink} href={c.published_url} target="_blank" rel="noopener noreferrer">open</a></> : ""}</small>}
-            <small className={styles.muted}>Posting directly to Facebook, Instagram and YouTube comes later; for now copy the draft into each app.</small>
           </article>
 
           <article className={styles.card}>
@@ -222,6 +247,11 @@ export default function ContentEditor({ id }: { id: string }) {
           <button type="button" className={styles.linkButton} style={{ justifySelf: "start" }} onClick={async () => { if (!window.confirm("Delete this content piece? Its media stays in the Library.")) return; try { await officeDelete("office_content", c.id); window.location.assign("/office/studio"); } catch (e) { setError(e instanceof Error ? e.message : "Could not delete."); } }}>Delete</button>
         </div>
       </div>
+      {(c.format === "reel" || c.format === "short" || c.format === "youtube") && (
+        <div style={{ marginTop: 16 }}>
+          <ReelMaker content={{ ...c, draft }} assets={assets} links={links} kit={kit} businessName={biz?.name || ""} onSaved={async (m) => { setMsg(m); await refresh(); }} />
+        </div>
+      )}
     </section>
   );
 }

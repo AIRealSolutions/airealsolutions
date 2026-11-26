@@ -88,3 +88,17 @@ export async function removeFromLibrary(path: string) {
   });
   if (!r.ok) throw new Error("Could not delete the file.");
 }
+
+// ---- Phase 7: connected channels and publishing ------------------------------------------------
+export type Provider = "youtube" | "facebook" | "instagram";
+export const PROVIDERS: Record<Provider, { label: string; icon: string }> = {
+  youtube: { label: "YouTube", icon: "▶️" }, facebook: { label: "Facebook Page", icon: "📘" }, instagram: { label: "Instagram", icon: "📸" },
+};
+/** Never includes the encrypted token. */
+export type SocialAccount = { id: string; business_id: string | null; provider: Provider; external_id: string; name: string; handle: string | null; avatar_url: string | null; status: "connected" | "error"; last_error: string | null; connected_at: string };
+export const ACCOUNT_SELECT = "id,business_id,provider,external_id,name,handle,avatar_url,status,last_error,connected_at";
+export type Publication = {
+  id: string; content_id: string; account_id: string | null; provider: Provider; account_name: string; status: "queued" | "processing" | "published" | "failed" | "cancelled";
+  publish_at: string; privacy: string; external_url: string | null; error: string | null; metrics: Record<string, number>; metrics_at: string | null; published_at: string | null;
+};
+export const PUBLICATION_SELECT = "id,content_id,account_id,provider,account_name,status,publish_at,privacy,external_url,error,metrics,metrics_at,published_at";

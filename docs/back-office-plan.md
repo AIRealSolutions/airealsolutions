@@ -1,6 +1,6 @@
 # AI Real Solutions Back Office ("The Office") — Plan
 
-**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phases 0–5, the Incubator and readiness live; Phase 6 built (run `docs/office-phase6.sql` in Supabase)
+**Date:** 2026-11-24 (rev. 3: decisions recorded in §0) · **Status:** Phases 0–5, the Incubator and readiness live; Phase 6 live; Phase 7 built (run `docs/office-phase6.sql` then `docs/office-phase7.sql` in Supabase)
 
 ## 0. Decisions made (2026-11-24)
 
@@ -247,7 +247,13 @@ Goal tree, tasks, daily plans, reminders (in-app + email), Daily Planner, a Verc
 - Brand kit for each business (voice, audience, colors, hashtags, disclaimers, logo); content calendar and pipeline (idea → drafting → ready → scheduled → published); AI ideas from the marketing plan, brand kit and Feed; AI writer for reels, Shorts, YouTube, posts, carousels, blogs and emails; schedule with a publish reminder; results tracking; Feed items become content ideas in one click.
 - Library: private Supabase Storage for logos, images, video and documents, tagged by business; attach to content; 7-day share links.
 
-**Phase 7 — Publishing and Video (2 weeks)**: posting straight to YouTube, Facebook and Instagram, results pulled back automatically, and reels assembled from templates.
+**Phase 7 — Publishing and Video (2 weeks)** ✅ built (run `docs/office-phase7.sql`; optional `docs/office-phase7-scheduler.sql`)
+- Channels tab in the Studio: connect a YouTube channel per business (Google consent, `youtube.upload`) and Facebook Pages with their linked Instagram professional accounts (one Meta login). Tokens are encrypted with INTEGRATIONS_ENCRYPTION_KEY; each channel is assigned to a business; disconnecting keeps post history.
+- Publish to channels from a content piece: now or scheduled, with YouTube visibility. YouTube gets a resumable upload (title from the draft, `#Shorts` for vertical pieces, description, chapters, tags); Facebook gets a video, photo, multi-photo or text post; Instagram gets a Reel, photo or carousel (container → processing → publish). Each channel's status, link and error shows on the piece, with Retry and Cancel. When every channel is posted, the piece is marked published.
+- Scheduled posts go out from `/api/office/cron/publish` every 10 minutes when Supabase pg_cron is turned on (`docs/office-phase7-scheduler.sql`), otherwise with the weekday morning job or whenever the Studio is open. Nothing posts without the owner pressing Publish or Schedule.
+- Results (views, likes, comments, shares; Instagram reach and saves) are pulled back each morning and on demand, and summed onto the piece.
+- Reel maker: three templates (text cards, photo slideshow, video + captions) built in the browser from the brand kit (colors, logo, disclaimers) and the draft, with optional music; recorded as MP4 in Chrome/Edge/Safari (WebM elsewhere), saved to the Library with a JPEG cover and attached to the piece.
+- Limits: until the Google project passes YouTube's API audit, uploads from it are locked to private; Meta needs App Review for `pages_manage_posts` and `instagram_content_publish` before anyone but app admins/testers can use it (the owner, as app admin, can post right away). Files are capped at 50 MB by the Library.
 
 **Phase 8 — Agents Desk, roles (assistant, CPA), text messages and phone push, phone-friendly polish**
 

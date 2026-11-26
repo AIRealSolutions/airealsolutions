@@ -55,7 +55,7 @@ export const OFFICE_MODULES: OfficeModule[] = [
     summary: "Google, GitHub, Vercel and Supabase accounts.", bullets: [] },
   { slug: "studio", label: "Content Studio", group: "Grow", phase: 6, ready: true,
     summary: "Social media, reels and YouTube for every brand.",
-    bullets: ["Content calendar", "AI scripts, captions and shot lists", "Brand kit for each business"] },
+    bullets: ["Content calendar", "AI scripts, captions and shot lists", "Brand kit for each business", "Reel maker", "Post to YouTube, Facebook and Instagram"] },
   { slug: "library", label: "Library", group: "Grow", phase: 6, ready: true,
     summary: "Logos, photos, flyers, decks and video.",
     bullets: ["Tagged by business and campaign", "AI-made flyers and one-pagers"] },

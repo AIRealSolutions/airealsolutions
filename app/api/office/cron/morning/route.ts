@@ -10,9 +10,10 @@ import { runCrmDaily } from "../../../../lib/office/crm";
 import { plaidConfigured, syncBanks } from "../../../../lib/office/plaid";
 import { rankNewItems, refreshFeeds } from "../../../../lib/office/feeds";
 import { buildPlan } from "../../../../lib/office/planner";
+import { refreshMetrics, runPublications, serviceCtx } from "../../../../lib/office/social";
 import { addDays, asService, localTime, officeDate, tzOffset, weekdayName, type AgendaItem, type BigGoal } from "../../../../lib/office/server";
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 export async function GET(request: Request) {
   try {
@@ -32,6 +33,14 @@ export async function GET(request: Request) {
     })().catch((e) => { console.error("[office] banking job failed", e); return null; });
     await closeReminder(rest, date).catch((e) => console.error("[office] close reminder failed", e));
     const crm = await runCrmDaily(rest, date).catch((e) => { console.error("[office] crm job failed", e); return null; });
+
+    // Scheduled posts that came due overnight, then fresh results for recent posts (phase 7 tables may not exist yet).
+    const social = await (async () => {
+      const ctx = serviceCtx();
+      const sent = await runPublications(ctx, { budgetMs: 90_000 });
+      const results = await refreshMetrics(ctx, { limit: 30 });
+      return { sent, results: results.updated };
+    })().catch((e) => { console.error("[office] social job failed", e); return null; });
 
     // Recurring invoices and overdue follow-ups become reminders before the plan reads them.
     const billing = await runBillingDaily(rest, date).catch((e) => { console.error("[office] billing job failed", e); return null; });
@@ -60,7 +69,7 @@ export async function GET(request: Request) {
         body: JSON.stringify({ last_sent_at: new Date().toISOString() }),
       });
     }
-    return Response.json({ date, built, emailed, reminders: reminders.length, billing, banking, crm });
+    return Response.json({ date, built, emailed, reminders: reminders.length, billing, banking, crm, social });
   } catch (e) {
     return errorResponse(e);
   }

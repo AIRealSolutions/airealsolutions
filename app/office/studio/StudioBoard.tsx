@@ -10,8 +10,9 @@ import {
   ASSET_SELECT, CHANNELS, CONTENT_SELECT, dayOf, FORMATS, formatIcon, formatLabel, STATUSES, timeOf, weekSlot,
   type Asset, type BrandKit, type Content, type Format,
 } from "./types";
+import Channels from "./Channels";
 
-type Tab = "calendar" | "pipeline" | "ideas" | "brand";
+type Tab = "calendar" | "pipeline" | "ideas" | "brand" | "channels";
 type Idea = { title: string; format: Format; channels: string[]; angle: string; week: number; why: string };
 
 export default function StudioBoard() {
@@ -30,6 +31,12 @@ export default function StudioBoard() {
     catch (e) { setError(e instanceof Error && /not in the database/i.test(e.message) ? "The Content Studio isn't set up yet. Run docs/office-phase6.sql in Supabase." : e instanceof Error ? e.message : "Could not load content."); }
   }, []);
   useEffect(() => { void load(); }, [load]);
+  // Send anything scheduled that came due while the Office was closed (quietly; publishing may not be set up).
+  useEffect(() => {
+    api<{ published: number; failed: number }>("/api/office/social/run", { method: "POST", body: "{}" })
+      .then((r) => { if (r.published || r.failed) { setMsg(`Sent ${r.published} scheduled post${r.published === 1 ? "" : "s"}${r.failed ? `; ${r.failed} failed (open the piece to see why)` : ""}.`); void load(); } })
+      .catch(() => undefined);
+  }, [load]);
   const shown = content.filter((c) => !filter || c.business_id === filter);
 
   return (
@@ -38,7 +45,7 @@ export default function StudioBoard() {
         <div>
           <span className="product-tag">Grow</span>
           <h1>Content Studio</h1>
-          <p>Posts, reels, Shorts, YouTube videos and emails for every business, from idea to published. AI suggests ideas from each marketing plan and the news, then writes them in the brand&apos;s voice.</p>
+          <p>Posts, reels, Shorts, YouTube videos and emails for every business, from idea to published. AI suggests ideas from each marketing plan and the news, then writes them in the brand&apos;s voice, makes the video, and posts to YouTube, Facebook and Instagram.</p>
         </div>
         <div className={styles.headerActions}>
           <div className={styles.toolbarField}><BusinessSelect businesses={businesses} value={filter} onChange={setFilter} noneLabel="All businesses" label="Business" /></div>
@@ -47,7 +54,7 @@ export default function StudioBoard() {
       <ErrorBox message={bizError || error} />
       {msg && <div className={styles.note} role="status">{msg}</div>}
       <div className={styles.tabs} role="tablist">
-        {([["calendar", "Calendar"], ["pipeline", "Pipeline"], ["ideas", "AI ideas"], ["brand", "Brand kits"]] as [Tab, string][]).map(([k, l]) => (
+        {([["calendar", "Calendar"], ["pipeline", "Pipeline"], ["ideas", "AI ideas"], ["brand", "Brand kits"], ["channels", "Channels"]] as [Tab, string][]).map(([k, l]) => (
           <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? styles.tabActive : undefined} onClick={() => choose(k)}>{l}</button>
         ))}
       </div>
@@ -55,6 +62,7 @@ export default function StudioBoard() {
       {tab === "calendar" && <Calendar items={shown} businesses={businesses} />}
       {tab === "pipeline" && <Pipeline items={shown} businesses={businesses} onChanged={load} onError={setError} />}
       {tab === "ideas" && <Ideas businesses={businesses} defaultBusiness={filter} onAdded={async (n) => { setMsg(`Added ${n} idea${n === 1 ? "" : "s"} to the calendar.`); await load(); }} onError={setError} />}
+      {tab === "channels" && <Channels businesses={businesses} defaultBusiness={filter} onMsg={setMsg} onError={setError} />}
       {tab === "brand" && <BrandKits businesses={businesses} defaultBusiness={filter} onMsg={setMsg} onError={setError} />}
     </section>
   );
