@@ -20,6 +20,7 @@ This plan picks up where `docs/factory-assembly-line.md` stops. That document se
 | `factory_agent_runs`, `factory_credit_ledger`, `factory_assembly_stages` | Tables exist; the Spec Agent records its runs and credits here |
 | Site Spec + instant preview (`SiteSpecPanel.tsx`, `/preview/[slug]`) | **Built (2026-11-26)**: Site Agent or template, approve, share link, working forms and dashboard |
 | Investor share links (`InvestorLinksPanel.tsx`, `?invite=`) | **Built (2026-11-26)**: per-person link, optional PIN, expiry, investor summary page, view tracking |
+| Starter template (`templates/factory-starter/`) | **Built (2026-11-26)**: Next.js 16 + Supabase + Resend from `site.json`; RLS, unit, smoke and RLS tests passing |
 | Code generation, build/check loop, deployed preview, graduation | **Not built** |
 
 All Factory database calls today come from the browser using the publishable key plus the user's session. That works for CRUD. Anything that holds a secret (LLM key, GitHub token, Vercel token, Supabase management token) has to run **server-side only**: Next.js route handlers or a background worker on Vercel, never in the browser.
@@ -98,6 +99,13 @@ Because the section types come from a fixed list, the LLM cannot invent things t
 - Uses the Claude API with tools: `read_file`, `write_file`, `run_command` (inside the sandbox only), `list_files`. Every file write is recorded.
 - Hard limits per job: maximum tries, maximum tokens or credits, maximum wall-clock time. If any limit is hit, the job stops and opens a repair task. It does not keep spending.
 
+**Starter built (2026-11-26):** `templates/factory-starter/` (see its README and AGENTS.md).
+- Renders `site.json` (a Site Spec) with the same section library and look as the instant preview, so the approved prototype and the real code start identical. `lib/site-spec.ts` is a copy of the Factory's `app/lib/site-spec.ts`.
+- Supabase: magic-link sign-in (`@supabase/ssr`, session kept fresh in `proxy.ts`), `site_members` (staff by email; owner/staff), `site_submissions` written only through the rate-limited `site_submit` RPC, members-only dashboard with status changes. Resend email to `OWNER_EMAIL` on each submission (the starter's one built-in automation).
+- Checks: `npm run check` = typecheck → unit (`site.json` valid, Site Spec rules) → build → Playwright smoke on desktop and phone (generated from `site.json`: every page loads with no errors or sideways scrolling, navigation, 404, every form fills and sends, the form API refuses bad input, dashboards hidden from visitors). `npm run test:rls` runs 20 RLS checks on a throwaway local Postgres (or `DATABASE_URL`, e.g. a Supabase branch). All passing.
+- To use it for new projects: copy the folder to its own repository, mark it a GitHub template, set `GITHUB_TEMPLATE_REPO`. Provisioning (`app/lib/integrations/provision.ts`) already generates project repos from that template.
+- Not checked yet: forms and sign-in against a live Supabase project (the database rules are tested directly in Postgres).
+
 ### 4. Check loop (the "check" part)
 Inside a Vercel Sandbox (an isolated microVM that is thrown away after the job):
 1. `npm ci`
@@ -164,7 +172,7 @@ All with RLS through `factory_can_access_project`. Worker writes use the service
 1. ✅ **LLM Spec Agent**: server route plus Claude call behind the existing "Generate Product Synthesis" button, with the template as fallback. *Small; immediately makes onboarding smarter.*
 2. ✅ **Site Spec plus instant preview renderer** at `/preview/[slug]`, with working forms and demo data. *First thing a customer or investor can click.* (built 2026-11-26)
 3. ✅ **Investor share link**: PIN or invite, banner, summary page, view tracking. (built 2026-11-26)
-4. **Starter template repo** (Next.js + Supabase + Resend) with RLS and smoke tests already passing.
+4. ✅ **Starter template repo** (Next.js + Supabase + Resend) with RLS and smoke tests already passing. (built 2026-11-26 in `templates/factory-starter/`)
 5. **Build jobs plus Vercel Sandbox check loop** (typecheck, build, tests, advisors), with try limits and logs.
 6. **Push to branch, Vercel preview deployment**, URL saved back to the project.
 7. **Graduation**: new repo, Supabase project, Vercel project, env vars, domain and DNS instructions, handoff.
