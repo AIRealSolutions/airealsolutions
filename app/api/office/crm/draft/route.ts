@@ -1,14 +1,15 @@
 // Draft a follow-up email with AI. POST { contact_id, deal_id? } as an admin. Nothing is sent here.
 import { officeAiConfigured, runFollowUpDraft } from "../../../../lib/agents/office-agents";
-import { errorResponse, HttpError, readJson, requireAdmin } from "../../../../lib/integrations/server";
-import { asUser } from "../../../../lib/office/server";
+import { errorResponse, HttpError, readJson } from "../../../../lib/integrations/server";
+import { asUser, requireOffice, WORK } from "../../../../lib/office/server";
+import { logged } from "../../../../lib/office/agent-log";
 
 export const maxDuration = 60;
 const UUID = /^[0-9a-f-]{36}$/i;
 
 export async function POST(request: Request) {
   try {
-    const user = await requireAdmin(request);
+    const user = await requireOffice(request, WORK);
     const { contact_id, deal_id } = await readJson<{ contact_id?: string; deal_id?: string }>(request);
     if (!contact_id || !UUID.test(contact_id) || (deal_id && !UUID.test(deal_id))) throw new HttpError(400, "contact_id is required.");
     if (!officeAiConfigured()) throw new HttpError(503, "AI is not set up on the server (ANTHROPIC_API_KEY).");
@@ -20,11 +21,11 @@ export async function POST(request: Request) {
     ]);
     if (!contact[0]) throw new HttpError(404, "Contact not found.");
     const d = deal[0];
-    const { data } = await runFollowUpDraft({
+    const { data } = await logged(rest, "follow-up", () => runFollowUpDraft({
       contact: { name: contact[0].name, title: contact[0].title, company: contact[0].office_companies?.name, notes: contact[0].notes },
       deal: d ? { title: d.title, business: d.office_businesses?.name, stage: d.office_pipelines?.stages.find((s) => s.key === d.stage)?.label || d.stage, next_step: d.next_step } : null,
       recent_activity: acts.map((a) => ({ when: a.occurred_at.slice(0, 10), kind: a.kind, direction: a.direction, subject: a.subject, body: (a.body || "").slice(0, 600) })),
-    }, (process.env.OFFICE_SIGNATURE || "Best,\nAI Real Solutions").replace(/\\n/g, "\n"));
+    }, (process.env.OFFICE_SIGNATURE || "Best,\nAI Real Solutions").replace(/\\n/g, "\n")));
     return Response.json({ subject: data.subject.slice(0, 200), body: data.body.slice(0, 5000) });
   } catch (e) {
     return errorResponse(e);

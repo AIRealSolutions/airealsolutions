@@ -1,5 +1,28 @@
 // Server-only helpers for the Office. Never import from a "use client" file.
-import { HttpError, SUPABASE_URL, userRest, type FactoryUser } from "../integrations/server";
+import { HttpError, SUPABASE_URL, isAdmin, requireUser, userRest, type FactoryUser } from "../integrations/server";
+
+// ---- roles (phase 8) ------------------------------------------------------------------------------
+
+export type OfficeRole = "owner" | "assistant" | "cpa";
+export const WORK: OfficeRole[] = ["owner", "assistant"];
+
+/** The caller's Office role. Before phase 8's SQL is run, admins are owners and nobody else has a role. */
+export async function officeRole(user: FactoryUser): Promise<OfficeRole | null> {
+  try {
+    const r = await userRest<string | null>(user, "rpc/office_role", { method: "POST", body: "{}" });
+    return r === "owner" || r === "assistant" || r === "cpa" ? r : null;
+  } catch {
+    return (await isAdmin(user)) ? "owner" : null;
+  }
+}
+
+/** Signed in with one of these Office roles, or a 403. Row-level security still decides what each role sees. */
+export async function requireOffice(request: Request, roles: OfficeRole[] = ["owner"]): Promise<FactoryUser & { role: OfficeRole }> {
+  const user = await requireUser(request);
+  const role = await officeRole(user);
+  if (!role || !roles.includes(role)) throw new HttpError(403, role ? "Your Office role can't do that." : "Office access required.");
+  return { ...user, role };
+}
 
 export const OFFICE_TZ = "America/New_York";
 

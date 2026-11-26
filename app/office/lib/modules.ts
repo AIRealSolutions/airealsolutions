@@ -3,12 +3,16 @@
 export type OfficeModule = {
   slug: string;
   label: string;
-  group: "Plan" | "Run" | "Money" | "Factory" | "Grow";
+  group: "Plan" | "Run" | "Money" | "Factory" | "Grow" | "Admin";
   phase: number;
   ready: boolean;
   summary: string;
   bullets: string[];
+  /** Who sees it (phase 8). Defaults by group: Money → owner + CPA, Factory and Admin → owner, the rest → owner + assistant. */
+  roles?: Role[];
 };
+
+export type Role = "owner" | "assistant" | "cpa";
 
 export const OFFICE_MODULES: OfficeModule[] = [
   { slug: "", label: "Today", group: "Plan", phase: 1, ready: true,
@@ -62,10 +66,26 @@ export const OFFICE_MODULES: OfficeModule[] = [
   { slug: "notes", label: "Notebook", group: "Grow", phase: 1, ready: true,
     summary: "A place to organize your thoughts.",
     bullets: ["Notes for each business", "AI summarize, turn into tasks, or send to the Factory"] },
-  { slug: "agents", label: "Agents Desk", group: "Grow", phase: 8, ready: false,
-    summary: "Every AI agent's work, cost and approval queue.",
+  { slug: "agents", label: "Agents Desk", group: "Admin", phase: 8, ready: true,
+    summary: "Every AI agent's work, cost and what's waiting on you.",
     bullets: ["Nothing goes out without your approval"] },
+  { slug: "team", label: "Team", group: "Admin", phase: 8, ready: true,
+    summary: "An assistant or a CPA, each seeing only their part of the Office.", bullets: [] },
+  { slug: "settings", label: "Settings", group: "Admin", phase: 8, ready: true, roles: ["owner", "assistant", "cpa"],
+    summary: "Phone notifications, text messages, the AI budget and installing the Office as an app.", bullets: [] },
 ];
+
+export function moduleRoles(m: OfficeModule): Role[] {
+  if (m.roles) return m.roles;
+  if (m.group === "Money") return ["owner", "cpa"];
+  if (m.group === "Factory" || m.group === "Admin") return ["owner"];
+  return ["owner", "assistant"];
+}
+/** The module a path belongs to ("" is Today). */
+export function moduleForPath(pathname: string) {
+  const slug = pathname.replace(/^\/office\/?/, "").split("/")[0] || "";
+  return OFFICE_MODULES.find((m) => m.slug === slug);
+}
 
 export const upcomingModules = () => OFFICE_MODULES.filter((m) => !m.ready);
 export const findModule = (slug: string) => OFFICE_MODULES.find((m) => m.slug === slug);

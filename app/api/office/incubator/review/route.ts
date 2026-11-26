@@ -1,15 +1,16 @@
 // Review and critique one plan document version with AI. POST { doc_id } as an admin. Saves and returns the review.
 import { officeAiConfigured, runPlanReview } from "../../../../lib/agents/office-agents";
-import { errorResponse, HttpError, readJson, requireAdmin } from "../../../../lib/integrations/server";
-import { asUser } from "../../../../lib/office/server";
+import { errorResponse, HttpError, readJson } from "../../../../lib/integrations/server";
+import { asUser, requireOffice, WORK } from "../../../../lib/office/server";
 import { loadVentureContext } from "../../../../lib/office/venture-context";
 import { DOC_SECTIONS, type DocKind } from "../../../../lib/office/venture-docs";
+import { logged } from "../../../../lib/office/agent-log";
 
 export const maxDuration = 300;
 
 export async function POST(request: Request) {
   try {
-    const user = await requireAdmin(request);
+    const user = await requireOffice(request, WORK);
     const { doc_id } = await readJson<{ doc_id?: string }>(request);
     if (!doc_id || !/^[0-9a-f-]{36}$/i.test(doc_id)) throw new HttpError(400, "doc_id is required.");
     if (!officeAiConfigured()) throw new HttpError(503, "AI is not set up on the server (ANTHROPIC_API_KEY).");
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
     const { biz, items, material } = await loadVentureContext(rest, doc.business_id, { excludeDocKind: doc.kind, docChars: 800 });
 
     const outline = DOC_SECTIONS[doc.kind];
-    const { data, usage } = await runPlanReview(doc.kind, outline, { version: doc.version, sections: doc.content.sections }, material);
+    const { data, usage } = await logged(rest, "plan-reviewer", () => runPlanReview(doc.kind, outline, { version: doc.version, sections: doc.content.sections }, material));
     const keys = new Set(outline.map((o) => o.key));
     const existing = new Set(items.map((i) => `${i.track}|${i.title.toLowerCase()}`));
     const n = (v: unknown, lo: number, hi: number) => Math.max(lo, Math.min(hi, Math.round(Number(v) || lo)));

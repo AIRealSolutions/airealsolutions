@@ -66,6 +66,19 @@ export async function checkAdmin(): Promise<boolean> {
   return (await officeRest<boolean>("rpc/factory_is_admin", { method: "POST", body: "{}" })) === true;
 }
 
+export type OfficeRole = "owner" | "assistant" | "cpa";
+
+/** The signed-in person's Office role (and marks them as seen). Before phase 8's SQL, admins are owners. */
+export async function officeRole(): Promise<OfficeRole | null> {
+  try {
+    const r = await officeRest<string | null>("rpc/office_touch_member", { method: "POST", body: "{}" });
+    return r === "owner" || r === "assistant" || r === "cpa" ? r : null;
+  } catch (e) {
+    if (e instanceof OfficeError && (e.status === 404 || e.code === "PGRST202")) return (await checkAdmin()) ? "owner" : null;
+    throw e;
+  }
+}
+
 export function signedInEmail(): string | null {
   try {
     return JSON.parse(localStorage.getItem(SESSION_KEY) || "null")?.user?.email ?? null;

@@ -1,8 +1,9 @@
 // Write a content piece with AI in the business's brand voice. POST { content_id } as an admin. Saves the draft.
 import { officeAiConfigured, runContentWriter } from "../../../../lib/agents/office-agents";
-import { errorResponse, HttpError, readJson, requireAdmin } from "../../../../lib/integrations/server";
-import { asUser } from "../../../../lib/office/server";
+import { errorResponse, HttpError, readJson } from "../../../../lib/integrations/server";
+import { asUser, requireOffice, WORK } from "../../../../lib/office/server";
 import { loadStudioContext } from "../../../../lib/office/studio";
+import { logged } from "../../../../lib/office/agent-log";
 
 export const maxDuration = 120;
 const s = (v: unknown, n: number) => String(v ?? "").slice(0, n);
@@ -10,7 +11,7 @@ const list = (v: unknown, max: number, n = 500) => (Array.isArray(v) ? v.map((x)
 
 export async function POST(request: Request) {
   try {
-    const user = await requireAdmin(request);
+    const user = await requireOffice(request, WORK);
     const { content_id } = await readJson<{ content_id?: string }>(request);
     if (!content_id || !/^[0-9a-f-]{36}$/i.test(content_id)) throw new HttpError(400, "content_id is required.");
     if (!officeAiConfigured()) throw new HttpError(503, "AI is not set up on the server (ANTHROPIC_API_KEY).");
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
       `office_content?id=eq.${content_id}&select=id,business_id,title,format,channels,idea,notes,status,draft&limit=1`))[0];
     if (!piece) throw new HttpError(404, "Content not found.");
     const context = await loadStudioContext(rest, piece.business_id);
-    const { data, usage } = await runContentWriter({ title: piece.title, format: piece.format, channels: piece.channels, brief: piece.idea, notes: piece.notes, current_draft: piece.draft }, context);
+    const { data, usage } = await logged(rest, "content-writer", () => runContentWriter({ title: piece.title, format: piece.format, channels: piece.channels, brief: piece.idea, notes: piece.notes, current_draft: piece.draft }, context), { business_id: piece.business_id, subject: piece.title });
     const draft = {
       title_options: list(data.title_options, 5, 120), hook: s(data.hook, 1000), script: s(data.script, 20000), beats: list(data.beats, 20),
       shot_list: list(data.shot_list, 20), caption: s(data.caption, 3000), hashtags: list(data.hashtags, 15, 60).map((h) => (h.startsWith("#") ? h : `#${h}`).replace(/\s+/g, "")),

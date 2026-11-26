@@ -27,7 +27,10 @@ async function fetchUser(token:string){
 async function isAdmin(token:string){
   try{
     const r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/factory_is_admin`,{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:"{}"});
-    return r.ok&&(await r.json())===true;
+    if(r.ok&&(await r.json())===true)return true;
+    // Office team members (assistant, CPA) also start in the Office.
+    const m=await fetch(`${SUPABASE_URL}/rest/v1/rpc/office_role`,{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:"{}"});
+    return m.ok&&Boolean(await m.json());
   }catch{return false}
 }
 /** After signing in: a same-site ?next= path, else the Office for administrators, else the Factory dashboard. */

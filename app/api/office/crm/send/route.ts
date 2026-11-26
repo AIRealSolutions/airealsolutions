@@ -1,14 +1,14 @@
 // Send an email to a contact from the connected Gmail and log it on the timeline.
 // POST { contact_id, deal_id?, subject, body } as an admin.
 import { sendGmail } from "../../../../lib/integrations/google";
-import { errorResponse, HttpError, readJson, requireAdmin } from "../../../../lib/integrations/server";
-import { asUser } from "../../../../lib/office/server";
+import { errorResponse, HttpError, readJson } from "../../../../lib/integrations/server";
+import { asUser, requireOffice, WORK } from "../../../../lib/office/server";
 
 const UUID = /^[0-9a-f-]{36}$/i;
 
 export async function POST(request: Request) {
   try {
-    const user = await requireAdmin(request);
+    const user = await requireOffice(request, WORK);
     const { contact_id, deal_id, subject, body } = await readJson<{ contact_id?: string; deal_id?: string; subject?: string; body?: string }>(request);
     if (!contact_id || !UUID.test(contact_id) || (deal_id && !UUID.test(deal_id))) throw new HttpError(400, "contact_id is required.");
     if (!subject?.trim() || !body?.trim()) throw new HttpError(400, "Subject and message are required.");

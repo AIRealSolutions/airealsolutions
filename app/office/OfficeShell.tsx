@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import styles from "./office.module.css";
-import { OFFICE_MODULES } from "./lib/modules";
-import { checkAdmin, SESSION_KEY, signedInEmail } from "./lib/client";
+import { moduleForPath, moduleRoles, OFFICE_MODULES } from "./lib/modules";
+import { officeRole, SESSION_KEY, signedInEmail, type OfficeRole } from "./lib/client";
+import { OfficeRoleContext } from "./useOfficeRole";
 import { factoryToken } from "../factory/connections/session";
 
 type Gate = "checking" | "ok" | "denied" | "error";
-const GROUPS = ["Plan", "Run", "Money", "Factory", "Grow"] as const;
+const GROUPS = ["Plan", "Run", "Money", "Factory", "Grow", "Admin"] as const;
+const ROLE_LABEL: Record<OfficeRole, string> = { owner: "Owner", assistant: "Assistant", cpa: "CPA" };
 
 /**
  * Admin gate + side navigation for every /office page.
@@ -19,6 +21,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
   const [gate, setGate] = useState<Gate>("checking");
   const [email, setEmail] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [role, setRole] = useState<OfficeRole>("owner");
 
   useEffect(() => {
     void (async () => {
@@ -29,7 +32,12 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
       }
       setEmail(signedInEmail());
       try {
-        setGate((await checkAdmin()) ? "ok" : "denied");
+        const r = await officeRole();
+        if (!r) { setGate("denied"); return; }
+        setRole(r);
+        // A CPA works in the books; their home is Accounting.
+        if (r === "cpa" && pathname === "/office") { window.location.replace("/office/accounting"); return; }
+        setGate("ok");
       } catch (e) {
         setError(e instanceof Error ? e.message : "Could not check your access.");
         setGate("error");
@@ -40,6 +48,11 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
   }, []);
 
   // On phones the menu is one sideways-scrolling row: bring the current section into view.
+  // The service worker shows phone notifications and lets the Office install as an app.
+  useEffect(() => {
+    if (gate === "ok" && "serviceWorker" in navigator) navigator.serviceWorker.register("/office-sw.js", { scope: "/office" }).catch(() => undefined);
+  }, [gate]);
+
   useEffect(() => {
     if (gate === "ok") document.querySelector('[aria-label="Office sections"] [aria-current="page"]')?.scrollIntoView({ block: "nearest", inline: "center" });
   }, [gate, pathname]);
@@ -55,8 +68,8 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
         {gate === "checking" && <p>Opening the Office…</p>}
         {gate === "denied" && (
           <>
-            <h1>Office access is for administrators</h1>
-            <p>{email ? `${email} is signed in but is not an AI Real Solutions administrator.` : "This account is not an administrator."}</p>
+            <h1>No Office access for this account</h1>
+            <p>{email ? `${email} is signed in but isn't on the AI Real Solutions team.` : "This account isn't on the team."} If you were invited, sign in with the email address the invitation went to.</p>
             <a className="button button-primary" href="/factory/dashboard">Go to My Factory</a>
           </>
         )}
@@ -71,6 +84,8 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
     );
   }
 
+  const allowed = (slug: string) => { const m = OFFICE_MODULES.find((x) => x.slug === slug); return !m || moduleRoles(m).includes(role); };
+  const here = moduleForPath(pathname);
   const isActive = (slug: string) => {
     const href = slug ? `/office/${slug}` : "/office";
     return slug ? pathname === href || pathname.startsWith(`${href}/`) : pathname === "/office";
@@ -88,10 +103,10 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
         </a>
         {/* A div, not <nav>: globals.css hides header <nav> links on small screens. */}
         <div className={styles.nav} role="navigation" aria-label="Office sections">
-          {GROUPS.map((group) => (
+          {GROUPS.filter((g) => OFFICE_MODULES.some((m) => m.group === g && allowed(m.slug))).map((group) => (
             <div key={group} className={styles.navGroup}>
               <span className={styles.navGroupLabel}>{group}</span>
-              {OFFICE_MODULES.filter((m) => m.group === group).map((m) => (
+              {OFFICE_MODULES.filter((m) => m.group === group && allowed(m.slug)).map((m) => (
                 <a
                   key={m.slug || "today"}
                   href={m.slug ? `/office/${m.slug}` : "/office"}
@@ -106,12 +121,25 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
           ))}
         </div>
         <div className={styles.sideFooter}>
-          <a href="/factory/dashboard">Open the Factory →</a>
-          <small>{email}</small>
+          {role === "owner" && <a href="/factory/dashboard">Open the Factory →</a>}
+          <small>{email}{role !== "owner" && ` · ${ROLE_LABEL[role]}`}</small>
           <button type="button" onClick={signOut}>Sign out</button>
         </div>
       </aside>
-      <div className={styles.content}>{children}</div>
+      <div className={styles.content}>
+        <OfficeRoleContext.Provider value={role}>
+          {here && !moduleRoles(here).includes(role) ? (
+            <section className={styles.page}>
+              <header className={styles.pageHeader}><h1>{here.label}</h1><p>This part of the Office isn&apos;t open to the {ROLE_LABEL[role]} role. Ask the owner if you need it.</p></header>
+            </section>
+          ) : (
+            <>
+              {role === "cpa" && <div className={styles.readOnlyBar} role="note">Read-only CPA access: you can view and export, but not change the books.</div>}
+              {children}
+            </>
+          )}
+        </OfficeRoleContext.Provider>
+      </div>
     </div>
   );
 }

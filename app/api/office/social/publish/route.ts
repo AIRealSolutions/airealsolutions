@@ -1,14 +1,15 @@
 // Publish a content piece to connected channels, now or at a set time.
 // POST { content_id, account_ids[], publish_at?: ISO (omit for now), privacy?: public|unlisted|private, asset_ids?[] } as an admin.
-import { errorResponse, HttpError, readJson, requireAdmin } from "../../../../lib/integrations/server";
+import { errorResponse, HttpError, readJson } from "../../../../lib/integrations/server";
 import { queuePublications, runPublications, userCtx } from "../../../../lib/office/social";
+import { requireOffice, WORK } from "../../../../lib/office/server";
 
 export const maxDuration = 300;
 const UUID = /^[0-9a-f-]{36}$/i;
 
 export async function POST(request: Request) {
   try {
-    const user = await requireAdmin(request);
+    const user = await requireOffice(request, WORK);
     const b = await readJson<{ content_id?: string; account_ids?: unknown; publish_at?: string | null; privacy?: string; asset_ids?: unknown }>(request);
     if (!b.content_id || !UUID.test(b.content_id)) throw new HttpError(400, "content_id is required.");
     const accountIds = Array.isArray(b.account_ids) ? [...new Set(b.account_ids.map(String).filter((x) => UUID.test(x)))].slice(0, 12) : [];

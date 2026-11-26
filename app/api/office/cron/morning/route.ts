@@ -11,6 +11,7 @@ import { plaidConfigured, syncBanks } from "../../../../lib/office/plaid";
 import { rankNewItems, refreshFeeds } from "../../../../lib/office/feeds";
 import { buildPlan } from "../../../../lib/office/planner";
 import { refreshMetrics, runPublications, serviceCtx } from "../../../../lib/office/social";
+import { notifyOffice, sendDueReminders } from "../../../../lib/office/notify";
 import { addDays, asService, localTime, officeDate, tzOffset, weekdayName, type AgendaItem, type BigGoal } from "../../../../lib/office/server";
 
 export const maxDuration = 300;
@@ -61,6 +62,14 @@ export async function GET(request: Request) {
       `office_reminders?status=eq.pending&last_sent_at=is.null&remind_at=lt.${encodeURIComponent(until)}&select=id,title,remind_at&order=remind_at.asc&limit=30`,
     );
 
+    // Phone: the day's three goals, and any reminders already due.
+    const pushed = await notifyOffice(rest, {
+      title: "Today's plan",
+      body: plan.big_goals.length ? plan.big_goals.map((g, i) => `${i + 1}. ${g.title}`).join("  ").slice(0, 180) : "Your plan is ready.",
+      url: "/office", tag: `brief-${date}`,
+    }, "brief").catch(() => null);
+    await sendDueReminders(rest).catch(() => undefined);
+
     const emailed = await sendBrief(date, plan, reminders);
     if (emailed && reminders.length) {
       await rest(`office_reminders?id=in.(${reminders.map((r) => r.id).join(",")})`, {
@@ -69,7 +78,7 @@ export async function GET(request: Request) {
         body: JSON.stringify({ last_sent_at: new Date().toISOString() }),
       });
     }
-    return Response.json({ date, built, emailed, reminders: reminders.length, billing, banking, crm, social });
+    return Response.json({ date, built, emailed, pushed, reminders: reminders.length, billing, banking, crm, social });
   } catch (e) {
     return errorResponse(e);
   }

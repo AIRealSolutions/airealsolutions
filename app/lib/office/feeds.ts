@@ -3,6 +3,7 @@
 import { createHash } from "node:crypto";
 import { officeAiConfigured, runFeedAgent } from "../agents/office-agents";
 import type { Rest } from "./server";
+import { logged } from "./agent-log";
 
 export type FeedSource = { id: string; business_id: string; kind: "rss" | "google_news"; name: string; config: { url?: string; query?: string }; active: boolean };
 type ParsedItem = { title: string; url: string | null; summary: string; published: string | null; source: string | null };
@@ -158,10 +159,10 @@ export async function rankNewItems(rest: Rest) {
         rest<{ business_id: string; title: string }[]>("office_goals?status=eq.open&level=in.(quarter,month,week)&select=business_id,title&limit=60"),
       ]);
       const slug = (id: string | null) => businesses.find((b) => b.id === id)?.slug || "";
-      const { data } = await runFeedAgent(
+      const { data } = await logged(rest, "feed-ranker", () => runFeedAgent(
         businesses.map((b) => ({ slug: b.slug, name: b.name, relationship: b.relationship, status: b.status, weekly_focus: b.weekly_focus, goals: goals.filter((g) => g.business_id === b.id).map((g) => g.title) })),
         items.map((it, i) => ({ i, business_slug: slug(it.business_id), title: it.title, source: it.source_name || "", summary: (it.summary || "").slice(0, 400), published: it.published_at || "" })),
-      );
+      ));
       const done = new Set<number>();
       for (const r of data.items || []) {
         const it = items[r.i];

@@ -1,15 +1,16 @@
 // Ask the Incubator advisor about one business. POST { business_id, question } as an admin.
 // Stores the question and the answer (with any suggested tasks or checklist items) in the conversation.
 import { officeAiConfigured, runAdvisor } from "../../../../lib/agents/office-agents";
-import { errorResponse, HttpError, readJson, requireAdmin } from "../../../../lib/integrations/server";
-import { asUser } from "../../../../lib/office/server";
+import { errorResponse, HttpError, readJson } from "../../../../lib/integrations/server";
+import { asUser, requireOffice, WORK } from "../../../../lib/office/server";
 import { loadVentureContext } from "../../../../lib/office/venture-context";
+import { logged } from "../../../../lib/office/agent-log";
 
 export const maxDuration = 120;
 
 export async function POST(request: Request) {
   try {
-    const user = await requireAdmin(request);
+    const user = await requireOffice(request, WORK);
     const { business_id, question } = await readJson<{ business_id?: string; question?: string }>(request);
     const q = String(question || "").trim();
     if (!business_id || !/^[0-9a-f-]{36}$/i.test(business_id) || !q) throw new HttpError(400, "business_id and question are required.");
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
       loadVentureContext(rest, business_id, { docChars: 1200 }),
       rest<{ role: "user" | "assistant"; content: string }[]>(`office_venture_chats?business_id=eq.${business_id}&select=role,content&order=created_at.desc&limit=12`),
     ]);
-    const { data } = await runAdvisor(material, history.reverse().map((m) => ({ role: m.role, content: m.content.slice(0, 3000) })), q);
+    const { data } = await logged(rest, "advisor", () => runAdvisor(material, history.reverse().map((m) => ({ role: m.role, content: m.content.slice(0, 3000) })), q));
     const actions = (data.actions || []).slice(0, 5).map((a) => ({
       type: a.type === "checklist" ? "checklist" : "task", track: biz.relationship === "client" ? "production" : a.track === "sale" ? "sale" : "production",
       category: a.category, title: String(a.title || "").slice(0, 200), detail: String(a.detail || "").slice(0, 500),
