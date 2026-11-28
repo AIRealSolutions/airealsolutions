@@ -43,7 +43,7 @@ export default function ServicesPage() {
       <header className="site-header">
         <a className="brand" href="/" aria-label="AI Real Solutions home"><span className="brand-mark">AI</span><span>Real Solutions</span></a>
         <nav aria-label="Primary navigation">
-          <a href="/services">Services</a><a href="/products">Products</a><a href="/about">About</a><a className="nav-cta" href="/contact">Start a Project</a>
+          <a href="/services">Services</a><a href="/products">Products</a><a href="/about">About</a><a href="/login">Login</a><a className="nav-cta" href="/contact">Start a Project</a>
         </nav>
       </header>
 

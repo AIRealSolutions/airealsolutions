@@ -17,6 +17,7 @@ export default function BuildPage() {
           <a href="/services">Services</a>
           <a href="/products">Products</a>
           <a href="/about">About</a>
+          <a href="/login">Login</a>
           <a className="nav-cta" href="/build">Build Something</a>
         </nav>
       </header>
