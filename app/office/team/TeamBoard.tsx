@@ -37,7 +37,7 @@ export default function TeamBoard() {
       await load();
     } catch (e2) { setError(e2 instanceof Error && /duplicate|unique/i.test(e2.message) ? "That email is already on the team." : e2 instanceof Error ? e2.message : "Could not add them."); }
   }
-  const invite = (m: Member) => `Hi${m.name ? ` ${m.name.split(" ")[0]}` : ""}, you have ${ROLES[m.role].label} access to the AI Real Solutions Office. Go to https://airealsolutions.com/login, create an account (or sign in) with ${m.email}, then open https://airealsolutions.com/office.`;
+  const invite = (m: Member) => `Hi${m.name ? ` ${m.name.split(" ")[0]}` : ""}, you have ${ROLES[m.role].label} access to the AI Real Solutions Office. Create your account here: https://airealsolutions.com/login?mode=signup&email=${encodeURIComponent(m.email)}&next=/office — use ${m.email} and choose a password. If you already have an account, sign in at the same link and you will land in the Office.`;
 
   if (missing) return <section className={styles.page}><header className={styles.pageHeader}><span className="product-tag">Admin</span><h1>Team</h1></header><p className={styles.muted}>Run docs/office-phase8.sql in Supabase to add team members.</p></section>;
   return (
